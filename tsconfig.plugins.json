@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@termco/kernel": ["src/platform/kernel.ts"],
+      "@termco/ui": ["src/platform/ui.ts"],
+      "@termco/*-base": ["plugin-repository/plugins/*-base/src/index.ts"],
+      "@/*": ["src/*"]
+    }
+  },
+  "include": [
+    "plugin-repository/plugins/**/*.ts",
+    "plugin-repository/plugins/**/*.tsx",
+    "core-plugins/**/*.ts",
+    "core-plugins/**/*.tsx",
+    "src/platform/**/*.ts",
+    "src/vite-env.d.ts"
+  ]
+}

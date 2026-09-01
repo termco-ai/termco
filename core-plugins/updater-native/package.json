@@ -1,0 +1,17 @@
+{
+  "name": "@termco-plugin/updater-native",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "electron": "^40.4.0",
+    "@termco/ui": "1.0.0",
+    "electron-updater": "^6.6.2",
+    "@termco/application-base": "1.0.0",
+    "@termco/desktop-base": "1.0.0",
+    "@termco/events-base": "1.0.0",
+    "@termco/http-base": "1.0.0",
+    "@termco/kernel": "1.0.0",
+    "@termco/ui-overlays-base": "1.0.0"
+  }
+}

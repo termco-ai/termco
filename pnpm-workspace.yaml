@@ -1,0 +1,16 @@
+# The @wterm/* packages are consumed from the pinned vendor/wterm submodule
+# (see package.json and .gitmodules).
+# Supply-chain freshness gate disabled (was 4320 = 3 days). `0` is required to
+# override pnpm 11's built-in 1440-minute (1-day) default — deleting the key
+# falls back to that default rather than disabling it.
+minimumReleaseAge: 0
+allowBuilds:
+  esbuild: true
+  msgpackr-extract: false
+  msw: true
+  electron: true
+  node-pty: true
+  # Windows NSIS/winstaller tooling — not built on macOS/Linux dev machines.
+  electron-winstaller: false
+patchedDependencies:
+  react-resizable-panels@4.12.0: patches/react-resizable-panels@4.12.0.patch

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 3,
+  "id": "company.counter-base",
+  "name": "Company Counter Contract",
+  "description": "Owns the public contract for the company.counter service.",
+  "category": "Company contracts",
+  "version": "1.0.0",
+  "dependencies": {
+    "@termco/kernel": "1.0.0"
+  }
+}

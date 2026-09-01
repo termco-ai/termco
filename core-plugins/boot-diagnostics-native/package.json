@@ -1,0 +1,6 @@
+{
+  "name": "@termco/plugin-boot-diagnostics-native",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module"
+}

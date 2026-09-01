@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 3,
+  "id": "workspace-shell-native",
+  "name": "Workspace Shell",
+  "description": "Owns the exact established resizable workspace layout, split panes, sidebar composition, shortcuts, and close-dialog presentation.",
+  "category": "Interface",
+  "version": "1.0.0",
+  "entrypoints": {
+    "renderer": "src/renderer.tsx"
+  },
+  "dependencies": {
+    "@hugeicons/core-free-icons": "^4.2.0",
+    "@hugeicons/react": "^1.1.7",
+    "react": "^19.2.7",
+    "@termco/ui": "1.0.0",
+    "@termco/agents-base": "1.0.0",
+    "@termco/ai-live-base": "1.0.0",
+    "@termco/ai-sessions-base": "1.0.0",
+    "@termco/browser-base": "1.0.0",
+    "@termco/desktop-base": "1.0.0",
+    "@termco/editor-base": "1.0.0",
+    "@termco/kernel": "1.0.0",
+    "@termco/shortcuts-base": "1.0.0",
+    "@termco/storage-base": "1.0.0",
+    "@termco/terminal-base": "1.0.0",
+    "@termco/ui-agents-base": "1.0.0",
+    "@termco/ui-commands-base": "1.0.0",
+    "@termco/ui-change-reveal-base": "1.0.0",
+    "@termco/ui-header-base": "1.0.0",
+    "@termco/ui-settings-base": "1.0.0",
+    "@termco/ui-shell-base": "1.0.0",
+    "@termco/ui-sidebar-base": "1.0.0",
+    "@termco/ui-tabs-base": "1.0.0",
+    "@termco/ui-workspace-base": "1.0.0",
+    "@termco/workspace-base": "1.0.0"
+  },
+  "activation": "eager"
+}

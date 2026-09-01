@@ -1,0 +1,11 @@
+{
+  "name": "@company/counter-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/renderer.ts",
+  "dependencies": {
+    "@company/counter-base": "file:../company-counter-base",
+    "@termco/kernel": "1.0.0"
+  }
+}

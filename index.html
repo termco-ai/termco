@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="./logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Termco</title>
+    <!--
+      Runtime surface for folder plugins: `@termco/<name>` resolves to a
+      generated shim that hands out the HOST's live module instance
+      (src/core/runtime/registry.ts, electron/main/core/runtimeShim.ts).
+      Copying those modules into a plugin instead would give it private
+      zustand singletons and a second React — both break silently.
+      Must be declared before any module loads.
+    -->
+    <script type="importmap">
+      { "imports": { "@termco/": "termco-plugin://__runtime/" } }
+    </script>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("termco-ui-theme-shadow");
+          var resolved =
+            t === "light" || t === "dark"
+              ? t
+              : window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          document.documentElement.classList.add(resolved);
+          document.documentElement.style.backgroundColor =
+            resolved === "dark" ? "#0d0f13" : "#ffffff";
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+
+  <body>
+    <div id="root">
+      <div id="terminal"></div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

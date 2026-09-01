@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "flows": [
+    {
+      "id": "chat-model-limits",
+      "keyless": true,
+      "evidence": ["e2e/session-completeness.spec.ts", "e2e/settings-models.spec.ts", "e2e/ai-context-limit.spec.ts"],
+      "guards": ["exact request equals local stub wire payload", "selected/provider model ids match", "configured context limit drives UI and thresholds", "credential absent from session JSONL"]
+    },
+    {
+      "id": "native-multi-step-tool",
+      "keyless": true,
+      "evidence": ["e2e/session-completeness.spec.ts", "plugin-repository/plugins/ai-registry-native/src/executor.test.ts"],
+      "guards": ["two distinct ordered request headers", "flushed tool call precedes body", "canonical result precedes second request", "one closed turn"]
+    },
+    {
+      "id": "auto-run-hard-approval",
+      "keyless": true,
+      "evidence": ["e2e/ai-auto-run.spec.ts", "plugin-repository/plugins/ai-registry-native/src/executor.test.ts"],
+      "guards": ["ordinary tools change from ask to allow-safe", "mandatory tool remains ask", "policy survives reload", "approval request and decision single-flight"]
+    },
+    {
+      "id": "mcp-managed-bridge",
+      "keyless": true,
+      "evidence": ["e2e/mcp-control.spec.ts", "e2e/mcp-tool-bridge-plugin.spec.ts", "plugin-repository/plugins/mcp-tool-bridge/src/toolExecutor.test.ts"],
+      "guards": ["local fixture server only", "shared execution authority", "approval outcome is explicit", "standalone session closes"]
+    },
+    {
+      "id": "file-mutation-world-state",
+      "keyless": true,
+      "evidence": ["plugin-repository/plugins/ai-tools-files-native/src/tools.test.ts", "e2e/ai-plugin-create.spec.ts"],
+      "guards": ["injected filesystem observes exact mutation", "managed source stays jailed", "visible artifact survives reload", "cleanup removes only created plugin"]
+    },
+    {
+      "id": "compaction-continuation",
+      "keyless": true,
+      "evidence": ["plugin-repository/plugins/ai-chat-native/src/baseline/store/chatRuntime/compaction.test.ts", "plugin-repository/plugins/ai-chat-native/src/runtime.test.ts"],
+      "guards": ["canonical surface replacement cites every source event", "source session remains unchanged", "child continuation derives from folded surface", "failed attempt closes without replacement"]
+    },
+    {
+      "id": "crash-repair",
+      "keyless": true,
+      "evidence": ["plugin-repository/plugins/session-native/src/jsonlPersistence.test.ts", "plugin-repository/plugins/session-base/src/repair.test.ts"],
+      "guards": ["not-started and outcome-unknown differ", "pending approval cancels", "repair is one flushed append", "second continuation is idempotent"]
+    },
+    {
+      "id": "fork-rerun-lineage",
+      "keyless": true,
+      "evidence": ["e2e/trajectory-native-plugin.spec.ts", "plugin-repository/plugins/trajectory-native/src/lineage.test.ts", "plugin-repository/plugins/ai-chat-native/src/runtime.test.ts"],
+      "guards": ["child header records exact parent boundary", "fork and rerun remain distinct", "source is immutable", "full paged lineage is navigable"]
+    },
+    {
+      "id": "subagent-parent-child",
+      "keyless": true,
+      "evidence": ["plugin-repository/plugins/ai-inference-replay-native/src/replay.test.ts", "e2e/ai-inference-subagent-plugins.spec.ts"],
+      "guards": ["binding uses parent role and ordinal", "concurrent siblings are unambiguous", "every child script binds", "all requests are consumed"]
+    },
+    {
+      "id": "coding-agent-checkpoint",
+      "keyless": true,
+      "evidence": ["electron/test/integration/codingAgentSessionJournal.test.ts", "e2e/coding-agent-native-plugin.spec.ts"],
+      "guards": ["adapter fidelity is explicit", "owner allocates every sequence", "workspace checkpoint is canonical", "provider replacement preserves UI"]
+    },
+    {
+      "id": "blank-plugin-visible-fab",
+      "keyless": true,
+      "evidence": ["e2e/ai-plugin-create.spec.ts"],
+      "guards": ["independent create adds one row", "no existing plugin is replaced", "FAB and all calculator choices are visible", "disable/re-enable/uninstall preserve shell and selection AI"]
+    },
+    {
+      "id": "plugin-disable-replace-provenance",
+      "keyless": true,
+      "evidence": ["e2e/settings-plugin-deactivation-matrix.spec.ts", "e2e/settings-runtime-provider-replacement.spec.ts", "e2e/ai-plugin-create.spec.ts"],
+      "guards": ["impact preview generation must match", "dependent impact is explicit", "shell sentinel stays mounted", "previous provider is restored on failure"]
+    },
+    {
+      "id": "model-session-query-recall",
+      "keyless": true,
+      "evidence": ["plugin-repository/plugins/session-query-native/src/query.test.ts", "plugin-repository/plugins/ai-tools-session-query-native/src/tools.test.ts"],
+      "guards": ["workspace authorization is exact", "current unresolved step is excluded", "limits and cursors are hidden", "redacted output remains bounded"]
+    },
+    {
+      "id": "retry-cancel-hang",
+      "keyless": true,
+      "evidence": ["plugin-repository/plugins/ai-chat-native/src/requestRetry.test.ts", "plugin-repository/plugins/ai-inference-replay-native/src/replay.test.ts", "plugin-repository/plugins/ai-registry-native/src/scheduler.test.ts"],
+      "guards": ["only pre-output retry is allowed", "Retry-After is capped", "hang consumes cancellation", "started and queued tool outcomes differ", "all promises settle"]
+    },
+    {
+      "id": "reload-live-provider-replacement",
+      "keyless": true,
+      "evidence": ["e2e/settings-runtime-provider-replacement.spec.ts", "e2e/app-renderer-recovery.spec.ts", "src/platform/rendererRuntime.test.ts"],
+      "guards": ["candidate graph must settle", "failed candidate restores previous provider", "renderer-broken profile shows recovery", "workspace remains mounted"]
+    }
+  ]
+}

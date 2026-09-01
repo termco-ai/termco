@@ -1,0 +1,317 @@
+name: Application release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: application-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Use installed Node headers
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          NODE_ROOT="$(node -p 'require("node:path").dirname(require("node:path").dirname(process.execPath))')"
+          test -f "$NODE_ROOT/include/node/node.h"
+          echo "npm_package_config_node_gyp_nodedir=$NODE_ROOT" >> "$GITHUB_ENV"
+
+      - name: Validate release tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_REF_TYPE: ${{ github.ref_type }}
+        run: |
+          if [ "$RELEASE_REF_TYPE" != "tag" ]; then
+            echo "Application releases must run from an existing version tag." >&2
+            exit 1
+          fi
+          VERSION="$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")"
+          if [ "$RELEASE_TAG" != "v$VERSION" ]; then
+            echo "Tag $RELEASE_TAG does not match package version $VERSION." >&2
+            exit 1
+          fi
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check-types
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm test:electron
+
+  plugin-tests:
+    name: plugin-tests (${{ matrix.shard }}/4)
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Use installed Node headers
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          NODE_ROOT="$(node -p 'require("node:path").dirname(require("node:path").dirname(process.execPath))')"
+          test -f "$NODE_ROOT/include/node/node.h"
+          echo "npm_package_config_node_gyp_nodedir=$NODE_ROOT" >> "$GITHUB_ENV"
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm bootstrap:wterm
+      - run: pnpm test:plugins -- --shard=${{ matrix.shard }}/4
+
+  plugin-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Use installed Node headers
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          NODE_ROOT="$(node -p 'require("node:path").dirname(require("node:path").dirname(process.execPath))')"
+          test -f "$NODE_ROOT/include/node/node.h"
+          echo "npm_package_config_node_gyp_nodedir=$NODE_ROOT" >> "$GITHUB_ENV"
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm bootstrap:wterm
+      - run: pnpm check-types:plugins
+      - run: pnpm build:plugins:all
+
+  build:
+    needs: [verify, plugin-tests, plugin-build]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: macos-x64
+            os: macos-15-intel
+            arch: x64
+            metadata_platform: macos
+            mac_arch: x64
+            command: pnpm exec electron-builder --mac dmg zip --x64 --publish never --config.mac.notarize=true
+            files: |
+              release/*.dmg
+              release/*.zip
+              release/*.blockmap
+              release/latest-mac-x64.yml
+          - id: macos-arm64
+            os: macos-15
+            arch: arm64
+            metadata_platform: macos
+            mac_arch: arm64
+            command: pnpm exec electron-builder --mac dmg zip --arm64 --publish never --config.mac.notarize=true
+            files: |
+              release/*.dmg
+              release/*.zip
+              release/*.blockmap
+              release/latest-mac-arm64.yml
+          - id: windows
+            os: windows-2025
+            arch: x64
+            metadata_platform: windows
+            command: pnpm exec electron-builder --win nsis --x64 --publish never
+            files: |
+              release/*.exe
+              release/*.blockmap
+              release/latest.yml
+          - id: linux
+            os: ubuntu-24.04
+            arch: x64
+            metadata_platform: linux
+            command: pnpm exec electron-builder --linux AppImage deb rpm --x64 --publish never
+            files: |
+              release/*.AppImage
+              release/*.deb
+              release/*.rpm
+              release/latest-linux.yml
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Use installed Node headers
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          NODE_ROOT="$(node -p 'require("node:path").dirname(require("node:path").dirname(process.execPath))')"
+          test -f "$NODE_ROOT/include/node/node.h"
+          echo "npm_package_config_node_gyp_nodedir=$NODE_ROOT" >> "$GITHUB_ENV"
+
+      - name: Verify native runner architecture
+        run: node -e "if (process.arch !== '${{ matrix.arch }}') throw new Error('Expected ${{ matrix.arch }} runner, got ' + process.arch)"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Verify Windows build scripts
+        if: matrix.id == 'windows'
+        run: pnpm test:windows-build-preflight
+
+      - run: pnpm build
+
+      - name: Require macOS signing credentials
+        if: startsWith(matrix.id, 'macos-')
+        shell: bash
+        env:
+          CSC_LINK: ${{ secrets.MACOS_CERTIFICATE }}
+          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -z "$CSC_LINK" ] || [ -z "$CSC_KEY_PASSWORD" ] || [ -z "$APPLE_API_KEY_BASE64" ] || [ -z "$APPLE_API_KEY_ID" ] || [ -z "$APPLE_API_ISSUER" ] || [ -z "$APPLE_TEAM_ID" ]; then
+            echo "One or more macOS signing/notarization secrets are missing." >&2
+            exit 1
+          fi
+
+      - name: Prepare macOS notarization key
+        if: startsWith(matrix.id, 'macos-')
+        shell: bash
+        env:
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+        run: |
+          APPLE_API_KEY_PATH="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8"
+          export APPLE_API_KEY_PATH
+          node -e 'require("node:fs").writeFileSync(process.env.APPLE_API_KEY_PATH, Buffer.from(process.env.APPLE_API_KEY_BASE64, "base64"))'
+          chmod 600 "$APPLE_API_KEY_PATH"
+          echo "APPLE_API_KEY=$APPLE_API_KEY_PATH" >> "$GITHUB_ENV"
+
+      - name: Build installers
+        env:
+          CSC_LINK: ${{ startsWith(matrix.id, 'macos-') && secrets.MACOS_CERTIFICATE || '' }}
+          CSC_KEY_PASSWORD: ${{ startsWith(matrix.id, 'macos-') && secrets.MACOS_CERTIFICATE_PASSWORD || '' }}
+          APPLE_API_KEY_ID: ${{ startsWith(matrix.id, 'macos-') && secrets.APPLE_API_KEY_ID || '' }}
+          APPLE_API_ISSUER: ${{ startsWith(matrix.id, 'macos-') && secrets.APPLE_API_ISSUER || '' }}
+          APPLE_TEAM_ID: ${{ startsWith(matrix.id, 'macos-') && secrets.APPLE_TEAM_ID || '' }}
+        run: ${{ matrix.command }}
+
+      - run: pnpm verify:application-layout
+
+      - name: Verify updater metadata
+        run: node scripts/verify-updater-metadata.mjs ${{ matrix.metadata_platform }} release
+
+      - name: Stage architecture-specific macOS metadata
+        if: startsWith(matrix.id, 'macos-')
+        shell: bash
+        env:
+          MAC_ARCH: ${{ matrix.mac_arch }}
+        run: mv release/latest-mac.yml "release/latest-mac-${MAC_ARCH}.yml"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: termco-${{ matrix.id }}-${{ github.ref_name }}
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Use installed Node headers
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          NODE_ROOT="$(node -p 'require("node:path").dirname(require("node:path").dirname(process.execPath))')"
+          test -f "$NODE_ROOT/include/node/node.h"
+          echo "npm_package_config_node_gyp_nodedir=$NODE_ROOT" >> "$GITHUB_ENV"
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: termco-*-${{ github.ref_name }}
+          path: release
+          merge-multiple: true
+
+      - name: Merge macOS updater metadata
+        run: node scripts/merge-macos-updater-metadata.mjs release
+
+      - name: Verify complete release set
+        run: |
+          node scripts/verify-updater-metadata.mjs macos release
+          node scripts/verify-updater-metadata.mjs windows release
+          node scripts/verify-updater-metadata.mjs linux release
+          test "$(find release -maxdepth 1 -type f -name '*.dmg' | wc -l)" -ge 2
+          test "$(find release -maxdepth 1 -type f -name '*.exe' | wc -l)" -ge 1
+          test "$(find release -maxdepth 1 -type f -name '*.AppImage' | wc -l)" -ge 1
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Termco ${RELEASE_TAG#v}" \
+            --generate-notes \
+            --verify-tag \
+            release/*

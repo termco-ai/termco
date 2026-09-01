@@ -1,0 +1,24 @@
+name: Documentation problem
+description: Report missing, incorrect, or unclear Termco documentation.
+title: "[Docs]: "
+labels: ["documentation", "status:triage"]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Documentation location
+      placeholder: URL, file, or section name
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is missing or incorrect?
+    validations:
+      required: true
+  - type: textarea
+    id: improvement
+    attributes:
+      label: Suggested improvement
+    validations:
+      required: false

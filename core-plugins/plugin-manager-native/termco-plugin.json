@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 3,
+  "id": "plugin-manager-native",
+  "name": "Plugin Manager",
+  "description": "Provides the categorized, searchable catalog for inspecting, copying, editing, and live-replacing every profile-selected plugin.",
+  "category": "System",
+  "version": "1.0.0",
+  "entrypoints": {
+    "renderer": "src/renderer.tsx"
+  },
+  "dependencies": {
+    "@hugeicons/core-free-icons": "^4.2.0",
+    "@hugeicons/react": "^1.1.7",
+    "@termco/application-base": "1.0.0",
+    "@termco/desktop-base": "1.0.0",
+    "@termco/kernel": "1.0.0",
+    "@termco/onboarding-base": "1.0.0",
+    "@termco/profile-base": "1.0.0",
+    "@termco/ui": "1.0.0",
+    "@termco/ui-settings-base": "1.0.0"
+  },
+  "activation": "eager"
+}

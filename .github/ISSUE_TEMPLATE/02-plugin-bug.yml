@@ -1,0 +1,68 @@
+name: Plugin bug
+description: Report a problem in an official Termco plugin or plugin update.
+title: "[Plugin bug]: "
+labels: ["bug", "area:plugin", "status:triage"]
+body:
+  - type: markdown
+    attributes:
+      value: You do not need to know which repository owns the problem. Report it here and maintainers will route it.
+  - type: input
+    id: plugin
+    attributes:
+      label: Plugin name
+      placeholder: "ai-chat-native"
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: Use the version shown by Termco. Enter unknown if it is not available.
+    validations:
+      required: true
+  - type: input
+    id: termco-version
+    attributes:
+      label: Termco version
+      placeholder: "0.9.2"
+    validations:
+      required: true
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: Operating system
+      options: ["macOS", "Windows", "Linux"]
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized logs or screenshots
+      description: Remove API keys, private paths, source code, usernames, and server details.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmation
+      options:
+        - label: I searched for an existing report and removed sensitive information.
+          required: true

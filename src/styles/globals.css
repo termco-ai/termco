@@ -1,0 +1,590 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "./fonts.css";
+@import "./code-highlight.css";
+@import "./plugin-ui.css";
+@import "./first-launch.css";
+
+@source "../../node_modules/streamdown/dist/index.js";
+/* Source-owning plugins are compiled into a runtime cache, outside Vite's
+   normal source graph. Scan their readable source so the exact UI classes they
+   own are present before those modules are loaded. */
+@source "../../plugin-repository/plugins/**/*.{ts,tsx}";
+@source "../../core-plugins/**/*.{ts,tsx}";
+
+/*
+ * THESIS: Termco 2.0 is a quiet, information-dense workspace where the
+ * terminal remains visually dominant and navigation recedes after use.
+ * OWN-WORLD: graphite and soft ink surfaces, low-contrast seams, compact
+ * controls, neutral typography, and a restrained iris interaction signal.
+ * STORY: choose a workspace, select a tool from the persistent side menu,
+ * work without visual interruption, and read state from a quiet status edge.
+ * FIRST VIEWPORT: a compact 44px title bar, slim tab row, vertical tool rail,
+ * resizable content panel, uninterrupted work canvas, and 28px status row.
+ * FORM: Quiet Studio — structure is felt through alignment and tone rather
+ * than oversized controls, heavy borders, uppercase labels, or color blocks.
+ */
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: 'Geist Variable', system-ui, sans-serif;
+    --font-sans: 'Geist Variable', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    color-scheme: light;
+    --background: oklch(0.976 0.003 275);
+    --foreground: oklch(0.19 0.012 270);
+    --card: oklch(0.995 0.001 275);
+    --card-foreground: oklch(0.19 0.012 270);
+    --popover: oklch(0.995 0.001 275);
+    --popover-foreground: oklch(0.19 0.012 270);
+    --primary: oklch(0.57 0.19 274);
+    --primary-foreground: oklch(0.17 0.014 270);
+    --secondary: oklch(0.942 0.006 275);
+    --secondary-foreground: oklch(0.23 0.014 270);
+    --muted: oklch(0.948 0.005 275);
+    --muted-foreground: oklch(0.49 0.018 270);
+    --accent: oklch(0.925 0.012 275);
+    --accent-foreground: oklch(0.23 0.014 270);
+    --destructive: oklch(0.57 0.225 26);
+    --border: oklch(0.875 0.008 275);
+    --input: oklch(0.91 0.008 275);
+    --ring: oklch(0.62 0.18 274);
+    --chart-1: oklch(0.57 0.19 274);
+    --chart-2: oklch(0.66 0.13 225);
+    --chart-3: oklch(0.84 0.2 126);
+    --chart-4: oklch(0.64 0.235 26);
+    --chart-5: oklch(0.62 0.1 78);
+    --radius: 0.5rem;
+    --sidebar: oklch(0.958 0.006 275);
+    --sidebar-foreground: oklch(0.23 0.014 270);
+    --sidebar-primary: oklch(0.57 0.19 274);
+    --sidebar-primary-foreground: oklch(0.17 0.014 270);
+    --sidebar-accent: oklch(0.925 0.012 275);
+    --sidebar-accent-foreground: oklch(0.23 0.014 270);
+    --sidebar-border: oklch(0.875 0.008 275);
+    --sidebar-ring: oklch(0.62 0.18 274);
+    --workspace-canvas: oklch(0.985 0.002 275);
+    --chrome-surface: oklch(0.955 0.006 275);
+    --panel-surface: oklch(0.966 0.005 275);
+    --raised-surface: oklch(0.995 0.001 275);
+    --control-surface: oklch(0.925 0.012 275);
+    --hardware-surface: var(--chrome-surface);
+    --hardware-raised: var(--raised-surface);
+    --hardware-foreground: var(--foreground);
+    --hardware-muted: var(--muted-foreground);
+    --hairline-strong: oklch(0.83 0.01 275);
+    --signal-soft: color-mix(in oklab, var(--primary) 11%, transparent);
+    --shadow-float: 0 24px 64px -20px oklch(0.16 0.03 275 / 28%);
+    --shadow-popover: 0 14px 36px -16px oklch(0.16 0.03 275 / 24%);
+    --shadow-control: 0 1px 2px oklch(0.16 0.03 275 / 8%);
+}
+
+.dark {
+    color-scheme: dark;
+    --background: oklch(0.155 0.012 270);
+    --foreground: oklch(0.925 0.008 275);
+    --card: oklch(0.195 0.014 270);
+    --card-foreground: oklch(0.925 0.008 275);
+    --popover: oklch(0.205 0.014 270);
+    --popover-foreground: oklch(0.925 0.008 275);
+    --primary: oklch(0.72 0.16 274);
+    --primary-foreground: oklch(0.15 0.015 274);
+    --secondary: oklch(0.235 0.015 270);
+    --secondary-foreground: oklch(0.925 0.008 275);
+    --muted: oklch(0.225 0.014 270);
+    --muted-foreground: oklch(0.66 0.018 275);
+    --accent: oklch(1 0 0 / 6%);
+    --accent-foreground: oklch(0.925 0.008 275);
+    --destructive: oklch(0.69 0.215 26);
+    --border: oklch(1 0 0 / 8%);
+    --input: oklch(1 0 0 / 9%);
+    --ring: oklch(0.72 0.16 274);
+    --chart-1: oklch(0.72 0.16 274);
+    --chart-2: oklch(0.72 0.12 225);
+    --chart-3: oklch(0.84 0.2 126);
+    --chart-4: oklch(0.69 0.215 26);
+    --chart-5: oklch(0.68 0.035 78);
+    --sidebar: oklch(0.165 0.012 270);
+    --sidebar-foreground: oklch(0.86 0.012 275);
+    --sidebar-primary: oklch(0.72 0.16 274);
+    --sidebar-primary-foreground: oklch(0.15 0.015 274);
+    --sidebar-accent: oklch(1 0 0 / 5%);
+    --sidebar-accent-foreground: oklch(0.925 0.008 275);
+    --sidebar-border: oklch(1 0 0 / 6%);
+    --sidebar-ring: oklch(0.72 0.16 274);
+    --workspace-canvas: oklch(0.14 0.011 270);
+    --chrome-surface: oklch(0.17 0.012 270);
+    --panel-surface: oklch(0.18 0.013 270);
+    --raised-surface: oklch(0.205 0.014 270);
+    --control-surface: oklch(1 0 0 / 8%);
+    --hardware-surface: var(--chrome-surface);
+    --hardware-raised: var(--raised-surface);
+    --hardware-foreground: var(--foreground);
+    --hardware-muted: var(--muted-foreground);
+    --hairline-strong: oklch(1 0 0 / 12%);
+    --signal-soft: color-mix(in oklab, var(--primary) 12%, transparent);
+    --shadow-float: 0 28px 72px -20px oklch(0.02 0.02 270 / 72%);
+    --shadow-popover: 0 16px 42px -16px oklch(0.02 0.02 270 / 68%);
+    --shadow-control: 0 1px 2px oklch(0.02 0.02 270 / 32%);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    overflow: hidden;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    }
+  html, body, #root {
+    height: 100%;
+    }
+  html {
+    @apply font-sans;
+    }
+}
+
+::selection {
+  background: color-mix(in oklab, var(--ring) 32%, transparent);
+}
+
+.termco-app {
+  background: var(--background);
+  isolation: isolate;
+}
+
+.termco-chrome,
+.termco-toolbar {
+  background: var(--chrome-surface);
+}
+
+.termco-toolbar {
+  background: color-mix(in oklab, var(--chrome-surface) 78%, var(--card));
+}
+
+.termco-workspace {
+  background: var(--workspace-canvas);
+}
+
+.termco-panel {
+  background: var(--panel-surface);
+}
+
+.termco-raised {
+  background: var(--raised-surface);
+  box-shadow: var(--shadow-control);
+}
+
+.termco-floating {
+  background: var(--popover);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-float);
+}
+
+.termco-focus-ring:focus-visible {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 22%, transparent);
+}
+
+.termco-section-label {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.035em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+:root {
+  --terminal-background: var(--background);
+  --terminal-foreground: var(--foreground);
+  --terminal-cursor: var(--primary);
+  --terminal-cursor-accent: var(--background);
+  --terminal-selection: color-mix(in oklab, var(--ring) 34%, transparent);
+  --terminal-ansi-black: #1b1f26;
+  --terminal-ansi-red: #ff7a7a;
+  --terminal-ansi-green: #5ed99a;
+  --terminal-ansi-yellow: #f5d06b;
+  --terminal-ansi-blue: #82aaff;
+  --terminal-ansi-magenta: #c79bf0;
+  --terminal-ansi-cyan: #4dd0e1;
+  --terminal-ansi-white: #cdd3da;
+  --terminal-ansi-bright-black: #5f6872;
+  --terminal-ansi-bright-red: #ff9b9b;
+  --terminal-ansi-bright-green: #8ee8b3;
+  --terminal-ansi-bright-yellow: #f8de8d;
+  --terminal-ansi-bright-blue: #a9c4ff;
+  --terminal-ansi-bright-magenta: #ddc0f8;
+  --terminal-ansi-bright-cyan: #7ce0ee;
+  --terminal-ansi-bright-white: #e9ebee;
+}
+
+:root {
+  --app-zoom: 1;
+}
+
+html[data-chrome="borderless"] .termco-bg-surface {
+  border-radius: 6px;
+}
+.zoom-content {
+  zoom: var(--app-zoom);
+}
+.zoom-exempt {
+  zoom: calc(1 / var(--app-zoom));
+}
+
+/* Custom window chrome (Linux/Windows): the OS gives us a transparent
+ * borderless window, and we paint the rounded corners + border + shadow
+ * ourselves so the app doesn't look naked on GNOME/KDE/Hyprland. */
+html[data-chrome="borderless"],
+html[data-chrome="borderless"] body {
+  background: transparent !important;
+}
+html[data-chrome="borderless"] #root,
+html[data-chrome="borderless"] #settings-root {
+  height: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--background);
+}
+
+/*
+ * wterm overrides — kept outside @layer so they win against the library
+ * stylesheet (which is not in any layer and would otherwise override).
+ * The engine element inherits the app's terminal chrome: no padding or
+ * decoration of its own, app fonts/colors via the CSS variables set by
+ * applyTerminalCssTheme, and our cursor styling on the fixed screen.
+ */
+.terminal-host.wterm {
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  width: 100%;
+  outline: none !important;
+}
+
+.terminal-host.wterm:focus,
+.terminal-host.wterm:focus-visible {
+  outline: none !important;
+}
+
+/* Bar cursor when focused; hollow outline when unfocused (xterm parity). */
+.terminal-host.wterm .term-cursor {
+  outline: 1px solid var(--term-cursor);
+  outline-offset: -1px;
+  background: transparent;
+  color: inherit;
+}
+
+.terminal-host.wterm.focused .term-cursor {
+  outline: none;
+  background: transparent;
+  box-shadow: inset 2px 0 0 var(--term-cursor);
+}
+
+.terminal-host.wterm ::selection {
+  background: var(--term-selection);
+}
+
+/* Legibility helper over background images (replaces xterm's
+   minimumContrastRatio): give terminal rows a translucent backdrop. */
+.terminal-bg-image .terminal-host .term-row {
+  background-color: color-mix(in srgb, var(--term-bg) 60%, transparent);
+}
+
+.cm-editor,
+.cm-scroller {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.cm-editor::-webkit-scrollbar,
+.cm-scroller::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+body {
+  -webkit-user-select: none;
+  user-select: none;
+}
+input,
+textarea,
+[contenteditable="true"],
+.cm-editor,
+.select-text,
+.select-text * {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Terminal output is real DOM text — native selection must work (block
+   chrome opts back out via .tb-header's own user-select). */
+.terminal-host.wterm .term-grid {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.cm-color-swatch {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-right: 0.35em;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  vertical-align: middle;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+.cm-color-swatch-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+
+.no-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.no-scrollbar::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+.no-scrollbar-deep,
+.no-scrollbar-deep * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.no-scrollbar-deep::-webkit-scrollbar,
+.no-scrollbar-deep *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+/* Kill native scrollbars everywhere by default — Linux/Windows ship chunky
+ * Chromium bars that break the chrome, and macOS WKWebView flashes its overlay
+ * scrollbar briefly during layout transitions (AI panel open, pane split,
+ * window resize) which looks like a glitch. Visible scroll affordances are
+ * provided per-region via shadcn <ScrollArea>. */
+html,
+html *,
+html *::before,
+html *::after {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* Motion tokens. Reduced-motion zeroes the durations as a global snap. */
+:root {
+  --dur-fast: 160ms;
+  --dur-base: 240ms;
+  --dur-slow: 320ms;
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes termco-collapsible-down {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes termco-collapsible-up {
+  from {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+.termco-collapsible-content {
+  overflow: hidden;
+}
+.termco-collapsible-content[data-state="open"] {
+  animation: termco-collapsible-down var(--dur-base) var(--ease-soft);
+}
+.termco-collapsible-content[data-state="closed"] {
+  animation: termco-collapsible-up var(--dur-base) var(--ease-soft);
+}
+
+/* Coding-agents transcript: a roomier, more conversational rhythm than the
+ * dense main-chat dock, scoped so it never leaks into the Chat tab. The user
+ * bubble recolors the shared MessageContent (bg-muted/70) under this scope only.
+ * (message.tsx renders MessageContent as the sole child
+ * of the `.is-user` group, so `.group.is-user > div` targets exactly the bubble
+ * and outranks the single-class utility.) */
+.agents-transcript {
+  line-height: 1.6;
+}
+.agents-transcript .group.is-user > div {
+  background-color: color-mix(in oklab, var(--primary) 14%, transparent);
+  color: var(--foreground);
+}
+
+/* Height auto<->0 reveal without JS measuring: animate the grid track from 0fr
+ * to 1fr. The inner child must be the sole grid row with min-height:0. Used by
+ * the docked AI input bar and the composer voice-status row. */
+.termco-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition:
+    grid-template-rows var(--dur-base) var(--ease-premium),
+    opacity var(--dur-base) var(--ease-premium);
+  opacity: 0;
+}
+.termco-reveal[data-state="open"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.termco-reveal > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+@keyframes termco-panel-in {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateX(0);
+  }
+}
+.termco-panel-in {
+  animation: termco-panel-in var(--dur-slow) var(--ease-premium);
+}
+
+@keyframes termco-tab-in {
+  from {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.termco-tab-in {
+  animation: termco-tab-in var(--dur-base) var(--ease-premium);
+}
+
+/* Text shimmer loop (replaces motion background-position animation). Driven by
+ * --shimmer-duration / --shimmer-spread set inline per instance. */
+@keyframes termco-shimmer {
+  from {
+    background-position: 100% center;
+  }
+  to {
+    background-position: 0% center;
+  }
+}
+.termco-shimmer {
+  background-repeat: no-repeat, padding-box;
+  background-size:
+    250% 100%,
+    auto;
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent calc(50% - var(--shimmer-spread)),
+      var(--color-background),
+      transparent calc(50% + var(--shimmer-spread))
+    ),
+    linear-gradient(
+      var(--color-muted-foreground),
+      var(--color-muted-foreground)
+    );
+  animation: termco-shimmer var(--shimmer-duration, 2s) linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0.01ms;
+    --dur-base: 0.01ms;
+    --dur-slow: 0.01ms;
+  }
+  .termco-reveal {
+    transition: none;
+  }
+  .termco-shimmer {
+    animation: none;
+    background-position: 0% center;
+  }
+}

@@ -1,0 +1,7 @@
+[submodule "vendor/wterm"]
+	path = vendor/wterm
+	url = https://github.com/Gatos90/wterm.git
+	branch = feat/ghostty-scrollback
+[submodule "plugins"]
+	path = plugin-repository
+	url = https://github.com/termco-ai/termco-plugin-releases.git

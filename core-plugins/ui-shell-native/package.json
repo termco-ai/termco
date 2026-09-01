@@ -1,0 +1,23 @@
+{
+  "name": "@termco/plugin-ui-shell-native",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "sonner": "^2.0.7",
+    "@termco/ui": "1.0.0",
+    "@termco/kernel": "1.0.0",
+    "@termco/ui-commands-base": "1.0.0",
+    "@termco/ui-change-reveal-base": "1.0.0",
+    "@termco/ui-dock-base": "1.0.0",
+    "@termco/ui-header-base": "1.0.0",
+    "@termco/ui-overlays-base": "1.0.0",
+    "@termco/ui-settings-base": "1.0.0",
+    "@termco/ui-shell-base": "1.0.0",
+    "@termco/ui-sidebar-base": "1.0.0",
+    "@termco/ui-statusbar-base": "1.0.0",
+    "@termco/ui-tabs-base": "1.0.0",
+    "@termco/ui-theme-base": "1.0.0",
+    "@termco/ui-workspace-base": "1.0.0"
+  }
+}

@@ -1,0 +1,373 @@
+.termco-setup {
+  --setup-ink: #eef2f8;
+  --setup-muted: #8993a4;
+  --setup-panel: #131720;
+  --setup-line: rgba(196, 211, 235, 0.12);
+  --setup-signal: #9d91ff;
+  --setup-mint: #5ed9b6;
+  position: relative;
+  min-height: 100%;
+  overflow: hidden;
+  color: var(--setup-ink);
+  background:
+    radial-gradient(circle at 78% 16%, rgba(116, 93, 255, 0.13), transparent 31rem),
+    radial-gradient(circle at 16% 92%, rgba(45, 190, 158, 0.07), transparent 28rem),
+    #0a0c11;
+}
+
+.termco-setup__grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.32;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");
+}
+
+.termco-setup__titlebar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--setup-line);
+  font-size: 12px;
+}
+
+.termco-setup__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+}
+
+.termco-setup__mark {
+  display: grid;
+  width: 19px;
+  height: 19px;
+  place-items: center;
+  border: 1px solid rgba(157, 145, 255, 0.48);
+  border-radius: 5px;
+  background: rgba(157, 145, 255, 0.1);
+}
+
+.termco-setup__mark span {
+  grid-area: 1 / 1;
+  width: 7px;
+  height: 1px;
+  background: var(--setup-signal);
+  transform: translateY(-2px);
+}
+
+.termco-setup__mark span + span {
+  width: 4px;
+  transform: translate(2px, 3px);
+}
+
+.termco-setup__version,
+.termco-setup__console-kicker,
+.termco-setup__source,
+.termco-setup__percent {
+  color: var(--setup-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.termco-setup__layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-height: calc(100vh - 58px);
+  grid-template-columns: minmax(0, 1.12fr) minmax(360px, 0.88fr);
+}
+
+.termco-setup__intro {
+  display: flex;
+  max-width: 720px;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(56px, 8vw, 112px);
+}
+
+.termco-setup__eyebrow {
+  margin: 0 0 25px;
+  color: var(--setup-mint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.termco-setup__intro h1 {
+  margin: 0;
+  font-size: clamp(48px, 6.2vw, 84px);
+  font-weight: 510;
+  letter-spacing: -0.062em;
+  line-height: 0.98;
+}
+
+.termco-setup__intro h1 span {
+  color: #777f8d;
+}
+
+.termco-setup__lede {
+  max-width: 580px;
+  margin: 34px 0 0;
+  color: #aeb6c4;
+  font-size: 15px;
+  line-height: 1.72;
+}
+
+.termco-setup__trust {
+  display: grid;
+  min-inline-size: 0;
+  margin: 56px 0 0;
+  padding: 0;
+  grid-template-columns: repeat(3, 1fr);
+  border: 0;
+  border-top: 1px solid var(--setup-line);
+}
+
+.termco-setup__trust div {
+  padding: 18px 20px 0 0;
+}
+
+.termco-setup__trust strong,
+.termco-setup__trust span {
+  display: block;
+}
+
+.termco-setup__trust strong {
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 620;
+}
+
+.termco-setup__trust span {
+  color: var(--setup-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.termco-setup__console {
+  align-self: center;
+  margin: 48px clamp(32px, 6vw, 86px) 48px 0;
+  border: 1px solid var(--setup-line);
+  border-radius: 18px;
+  background: rgba(19, 23, 32, 0.86);
+  box-shadow: 0 40px 110px rgba(0, 0, 0, 0.36);
+  backdrop-filter: blur(22px);
+}
+
+.termco-setup__console-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 26px;
+  border-bottom: 1px solid var(--setup-line);
+}
+
+.termco-setup__console-head strong,
+.termco-setup__console-kicker {
+  display: block;
+}
+
+.termco-setup__console-head strong {
+  margin-top: 7px;
+  font-size: 17px;
+  font-weight: 560;
+}
+
+.termco-setup__pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--setup-mint);
+  box-shadow: 0 0 0 6px rgba(94, 217, 182, 0.08), 0 0 24px rgba(94, 217, 182, 0.44);
+  animation: termco-setup-pulse 1.8s ease-in-out infinite;
+}
+
+.termco-setup__pulse.is-failed {
+  background: #ff8a80;
+  box-shadow: 0 0 0 6px rgba(255, 138, 128, 0.08);
+  animation: none;
+}
+
+.termco-setup__stages {
+  margin: 0;
+  padding: 19px 26px 15px;
+  list-style: none;
+}
+
+.termco-setup__stages li {
+  position: relative;
+  display: flex;
+  min-height: 62px;
+  align-items: flex-start;
+  gap: 14px;
+  color: #626b79;
+}
+
+.termco-setup__stages li:not(:last-child)::after {
+  position: absolute;
+  top: 24px;
+  bottom: -1px;
+  left: 10px;
+  width: 1px;
+  background: var(--setup-line);
+  content: "";
+}
+
+.termco-setup__stages li.is-complete:not(:last-child)::after {
+  background: rgba(94, 217, 182, 0.42);
+}
+
+.termco-setup__node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+  place-items: center;
+  border: 1px solid var(--setup-line);
+  border-radius: 999px;
+  background: var(--setup-panel);
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.termco-setup__stage-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.termco-setup__stage-copy strong,
+.termco-setup__stage-copy small {
+  display: block;
+}
+
+.termco-setup__stage-copy strong {
+  padding-top: 2px;
+  font-size: 12px;
+  font-weight: 520;
+}
+
+.termco-setup__stage-copy small {
+  overflow: hidden;
+  margin-top: 5px;
+  color: var(--setup-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.termco-setup__stages li.is-active {
+  color: var(--setup-ink);
+}
+
+.termco-setup__stages li.is-active .termco-setup__node {
+  border-color: rgba(157, 145, 255, 0.5);
+  color: var(--setup-signal);
+  box-shadow: 0 0 0 5px rgba(157, 145, 255, 0.07);
+}
+
+.termco-setup__stages li.is-complete {
+  color: #a9b3c0;
+}
+
+.termco-setup__stages li.is-complete .termco-setup__node {
+  border-color: rgba(94, 217, 182, 0.28);
+  color: var(--setup-mint);
+}
+
+.termco-setup__percent {
+  padding-top: 4px;
+  color: var(--setup-signal);
+}
+
+.termco-setup__source {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 26px;
+  border-top: 1px solid var(--setup-line);
+  text-transform: none;
+}
+
+.termco-setup__source span {
+  text-transform: uppercase;
+}
+
+.termco-setup__source code {
+  overflow: hidden;
+  color: #aeb6c4;
+  text-overflow: ellipsis;
+}
+
+.termco-setup__error {
+  margin: 0 26px 24px;
+  padding: 14px;
+  border: 1px solid rgba(255, 138, 128, 0.23);
+  border-radius: 10px;
+  background: rgba(255, 138, 128, 0.06);
+}
+
+.termco-setup__error strong,
+.termco-setup__error p {
+  display: block;
+  font-size: 11px;
+}
+
+.termco-setup__error p {
+  max-height: 82px;
+  overflow: auto;
+  margin: 6px 0 12px;
+  color: #c5a3a1;
+  line-height: 1.5;
+}
+
+.termco-setup__error button {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  padding: 7px 11px;
+  color: var(--setup-ink);
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.termco-setup__error button:focus-visible {
+  outline: 2px solid var(--setup-signal);
+  outline-offset: 2px;
+}
+
+@keyframes termco-setup-pulse {
+  50% { opacity: 0.45; transform: scale(0.82); }
+}
+
+@media (max-width: 860px) {
+  .termco-setup { overflow: auto; }
+  .termco-setup__layout { grid-template-columns: 1fr; }
+  .termco-setup__intro { padding: 56px 34px 38px; }
+  .termco-setup__intro h1 { font-size: clamp(44px, 11vw, 70px); }
+  .termco-setup__trust { margin-top: 38px; }
+  .termco-setup__console { margin: 0 34px 48px; }
+}
+
+@media (max-width: 560px) {
+  .termco-setup__titlebar { padding: 0 20px; }
+  .termco-setup__intro { padding-inline: 22px; }
+  .termco-setup__trust { grid-template-columns: 1fr; }
+  .termco-setup__trust div { padding-top: 14px; }
+  .termco-setup__console { margin-inline: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .termco-setup__pulse { animation: none; }
+}

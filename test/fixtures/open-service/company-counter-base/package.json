@@ -1,0 +1,10 @@
+{
+  "name": "@company/counter-base",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "@termco/kernel": "1.0.0"
+  }
+}

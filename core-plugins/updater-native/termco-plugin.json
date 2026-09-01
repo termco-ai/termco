@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 3,
+  "id": "updater-native",
+  "name": "Software Updates",
+  "description": "Checks, downloads, and installs Termco updates and publishes progress through the shared application event capability.",
+  "category": "Platform providers",
+  "version": "1.0.0",
+  "entrypoints": {
+    "main": "src/main.ts",
+    "renderer": "src/renderer.tsx"
+  },
+  "dependencies": {
+    "electron": "^40.4.0",
+    "@termco/ui": "1.0.0",
+    "electron-updater": "^6.6.2",
+    "@termco/application-base": "1.0.0",
+    "@termco/desktop-base": "1.0.0",
+    "@termco/events-base": "1.0.0",
+    "@termco/http-base": "1.0.0",
+    "@termco/kernel": "1.0.0",
+    "@termco/ui-overlays-base": "1.0.0"
+  },
+  "activation": "eager"
+}

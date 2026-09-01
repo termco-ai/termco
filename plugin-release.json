@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "enabled": true,
+  "repository": "termco-ai/termco-plugin-releases",
+  "publicKeys": {
+    "production-2026-08": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAv2s6Vu5iGVLXIGMWxBkSA4j0daYecHYdwfqeyuVD3Xw=\n-----END PUBLIC KEY-----\n"
+  }
+}

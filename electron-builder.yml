@@ -1,0 +1,105 @@
+appId: app.termco
+productName: Termco
+copyright: © Termco AI
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+
+extraResources:
+  # Only contract packages and recovery-critical plugins ship with Electron.
+  # The complete feature set is fetched from the signed plugin feed on first run.
+  - from: plugin-repository/plugins
+    to: plugin-platform/plugins
+    filter:
+      - "*-base/**"
+      - "!**/AGENTS.md"
+  - from: core-plugins
+    to: plugin-platform/core-plugins
+    filter:
+      - "**/*"
+      - "!**/AGENTS.md"
+  - from: build/bootstrap-profile
+    to: plugin-platform/profiles/bootstrap
+  - from: profiles/default
+    to: plugin-platform/profile-templates/default
+  - from: profiles/safe-recovery
+    to: plugin-platform/profile-templates/safe-recovery
+  - from: .termco-cache/plugins
+    to: plugin-platform/cache
+    filter:
+      - "boot-diagnostics-native/**"
+      - "plugin-manager-native/**"
+      - "safe-recovery-native/**"
+      - "settings-native/**"
+      - "ui-shell-native/**"
+      - "updater-native/**"
+      - "workspace-shell-native/**"
+  - from: plugin-release.json
+    to: plugin-platform/plugin-release.json
+  # The platform compiles copied/edited source plugins into the user's
+  # disposable cache. This is platform machinery, not a product plugin.
+  - from: scripts/plugin-compiler-lib.mjs
+    to: platform/plugin-compiler-lib.mjs
+  - from: node_modules/esbuild
+    to: platform/node_modules/esbuild
+  - from: node_modules/typescript
+    to: platform/node_modules/typescript
+  - from: node_modules/node-pty
+    to: plugin-platform/node_modules/node-pty
+
+# Native addons + binaries must live outside the asar so they can be dlopen'd /
+# exec'd at runtime (node-pty spawn-helper, esbuild, ripgrep binary).
+asarUnpack:
+  - "**/node_modules/esbuild/**"
+  - "**/node_modules/@esbuild/**"
+  - "**/node_modules/node-pty/**"
+  - "**/node_modules/@vscode/ripgrep/**"
+  - "**/node_modules/@vscode/**"
+
+mac:
+  category: public.app-category.developer-tools
+  minimumSystemVersion: "13.0"
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  icon: build/icon.png
+  target:
+    - dmg
+    - zip
+  extendInfo:
+    NSCameraUsageDescription: "A program running within Termco would like to use the camera."
+    NSMicrophoneUsageDescription: "A program running within Termco would like to use your microphone."
+
+win:
+  icon: build/icon.png
+  target:
+    - nsis
+
+nsis:
+  artifactName: "${productName}-Setup-${version}.${ext}"
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+
+linux:
+  category: Development
+  maintainer: Termco AI <support@termco.app>
+  icon: build/icon.png
+  target:
+    - AppImage
+    - deb
+    - rpm
+
+# Auto-update feed (GitHub releases) for electron-updater.
+# Signing/notarization credentials come from CI env vars.
+publish:
+  provider: github
+  owner: termco-ai
+  repo: termco

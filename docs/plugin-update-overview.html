@@ -1,0 +1,1520 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Visual overview of the implemented split between full Electron application updates and live plugin-only updates."
+    />
+    <title>Termco update architecture — one product, two delivery lanes</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #edf4f6;
+        --paper-deep: #dce8eb;
+        --ink: #112c35;
+        --ink-soft: #4d6670;
+        --line: #b7c9ce;
+        --white: #fbfdfe;
+        --host: #315efb;
+        --host-dark: #173dc1;
+        --plugin: #008f7d;
+        --plugin-dark: #006a5d;
+        --amber: #df8528;
+        --danger: #bd4552;
+        --shadow: 0 24px 70px rgba(17, 44, 53, 0.13);
+        --display: "Avenir Next", Avenir, "Segoe UI Variable Display", "Segoe UI", sans-serif;
+        --body: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        color: var(--ink);
+        background:
+          linear-gradient(rgba(17, 44, 53, 0.045) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(17, 44, 53, 0.045) 1px, transparent 1px),
+          var(--paper);
+        background-size: 36px 36px;
+        font-family: var(--body);
+        line-height: 1.55;
+      }
+
+      body::before {
+        position: fixed;
+        z-index: 20;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 5px;
+        content: "";
+        background: linear-gradient(90deg, var(--host) 0 50%, var(--plugin) 50% 100%);
+      }
+
+      button,
+      a {
+        font: inherit;
+      }
+
+      button:focus-visible,
+      a:focus-visible {
+        outline: 3px solid var(--amber);
+        outline-offset: 3px;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      code {
+        border: 1px solid rgba(17, 44, 53, 0.13);
+        border-radius: 5px;
+        background: rgba(255, 255, 255, 0.58);
+        padding: 0.12rem 0.38rem;
+        font-family: var(--mono);
+        font-size: 0.88em;
+      }
+
+      .shell {
+        width: min(1240px, calc(100% - 40px));
+        margin: 0 auto;
+      }
+
+      .masthead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 28px 0 18px;
+        font-family: var(--mono);
+        font-size: 0.76rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .wordmark {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+      }
+
+      .wordmark-mark {
+        display: grid;
+        width: 27px;
+        height: 27px;
+        place-items: center;
+        border: 1px solid var(--ink);
+        background: var(--ink);
+        color: var(--white);
+        font-size: 0.68rem;
+      }
+
+      .status-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--ink-soft);
+      }
+
+      .status-tag::before {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--amber);
+        content: "";
+        box-shadow: 0 0 0 4px rgba(223, 133, 40, 0.14);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.65fr);
+        gap: clamp(34px, 7vw, 100px);
+        align-items: end;
+        min-height: 560px;
+        padding: clamp(60px, 11vw, 140px) 0 76px;
+      }
+
+      .eyebrow,
+      .section-kicker {
+        margin: 0 0 18px;
+        font-family: var(--mono);
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .eyebrow {
+        color: var(--ink-soft);
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        max-width: 850px;
+        margin-bottom: 30px;
+        font-family: var(--display);
+        font-size: clamp(3.8rem, 8.4vw, 7.8rem);
+        font-weight: 780;
+        letter-spacing: -0.07em;
+        line-height: 0.86;
+      }
+
+      h1 .lane-word {
+        display: inline-block;
+        position: relative;
+        color: var(--plugin-dark);
+      }
+
+      h1 .lane-word::after {
+        position: absolute;
+        right: 0.02em;
+        bottom: -0.1em;
+        left: 0.02em;
+        height: 0.06em;
+        background: linear-gradient(90deg, var(--host) 0 49%, transparent 49% 52%, var(--plugin) 52%);
+        content: "";
+      }
+
+      .hero-copy {
+        max-width: 730px;
+        margin-bottom: 0;
+        color: var(--ink-soft);
+        font-size: clamp(1.05rem, 1.7vw, 1.3rem);
+      }
+
+      .hero-aside {
+        border-top: 2px solid var(--ink);
+        padding-top: 22px;
+      }
+
+      .rule-card {
+        padding: 17px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .rule-card strong {
+        display: block;
+        margin-bottom: 4px;
+        font-family: var(--display);
+        font-size: 1rem;
+      }
+
+      .rule-card span {
+        color: var(--ink-soft);
+        font-size: 0.9rem;
+      }
+
+      .rule-card.host strong {
+        color: var(--host-dark);
+      }
+
+      .rule-card.plugin strong {
+        color: var(--plugin-dark);
+      }
+
+      .proof-strip {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 18px;
+        align-items: center;
+        margin-bottom: 76px;
+        border: 1px solid var(--line);
+        background: rgba(251, 253, 254, 0.7);
+        padding: 19px 22px;
+        box-shadow: 8px 8px 0 var(--paper-deep);
+      }
+
+      .proof-mark {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--plugin);
+        color: white;
+        font-weight: 900;
+      }
+
+      .proof-strip p {
+        margin: 0;
+        color: var(--ink-soft);
+      }
+
+      .proof-strip strong {
+        color: var(--ink);
+      }
+
+      section {
+        scroll-margin-top: 30px;
+      }
+
+      .section-heading {
+        display: grid;
+        grid-template-columns: minmax(0, 0.8fr) minmax(280px, 0.55fr);
+        gap: 40px;
+        align-items: end;
+        margin-bottom: 34px;
+      }
+
+      .section-kicker {
+        color: var(--plugin-dark);
+      }
+
+      h2 {
+        margin-bottom: 0;
+        font-family: var(--display);
+        font-size: clamp(2.2rem, 4.5vw, 4.15rem);
+        letter-spacing: -0.055em;
+        line-height: 0.98;
+      }
+
+      .section-intro {
+        margin-bottom: 0;
+        color: var(--ink-soft);
+      }
+
+      .routing-lab {
+        overflow: hidden;
+        border: 1px solid var(--ink);
+        background: var(--white);
+        box-shadow: var(--shadow);
+      }
+
+      .lab-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        border-bottom: 1px solid var(--ink);
+        background: var(--ink);
+        padding: 12px 16px;
+        color: white;
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .lab-leds {
+        display: flex;
+        gap: 6px;
+      }
+
+      .lab-leds span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #789099;
+      }
+
+      .lab-leds span:nth-child(1) {
+        background: #ffcf68;
+      }
+
+      .lab-leds span:nth-child(2) {
+        background: #5ddabf;
+      }
+
+      .lab-grid {
+        display: grid;
+        grid-template-columns: minmax(260px, 0.54fr) minmax(0, 1.2fr);
+        min-height: 610px;
+      }
+
+      .scenario-panel {
+        border-right: 1px solid var(--ink);
+        background: #f4f8f9;
+        padding: 28px;
+      }
+
+      .panel-label {
+        margin-bottom: 14px;
+        color: var(--ink-soft);
+        font-family: var(--mono);
+        font-size: 0.71rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .scenario-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .scenario-button {
+        width: 100%;
+        border: 1px solid var(--line);
+        background: transparent;
+        padding: 14px 15px;
+        color: var(--ink);
+        cursor: pointer;
+        text-align: left;
+        transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+      }
+
+      .scenario-button:hover {
+        transform: translateX(4px);
+        border-color: var(--ink-soft);
+      }
+
+      .scenario-button[aria-pressed="true"] {
+        border-color: var(--ink);
+        background: var(--white);
+        box-shadow: 5px 5px 0 var(--paper-deep);
+      }
+
+      .scenario-button strong,
+      .scenario-button span {
+        display: block;
+      }
+
+      .scenario-button strong {
+        margin-bottom: 3px;
+        font-size: 0.94rem;
+      }
+
+      .scenario-button span {
+        color: var(--ink-soft);
+        font-family: var(--mono);
+        font-size: 0.7rem;
+      }
+
+      .route-panel {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        padding: clamp(24px, 4vw, 48px);
+      }
+
+      .route-decision {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        min-height: 88px;
+        margin-bottom: 10px;
+      }
+
+      .decision-code {
+        flex: 0 0 auto;
+        border: 1px solid var(--line);
+        background: var(--paper);
+        padding: 8px 10px;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+      }
+
+      .route-decision strong {
+        display: block;
+        margin-bottom: 4px;
+        font-family: var(--display);
+        font-size: 1.25rem;
+      }
+
+      .route-decision p {
+        margin-bottom: 0;
+        color: var(--ink-soft);
+        font-size: 0.92rem;
+      }
+
+      .route-visual {
+        display: grid;
+        grid-template-rows: 170px auto;
+        align-content: center;
+      }
+
+      .route-svg {
+        width: 100%;
+        height: 170px;
+        overflow: visible;
+      }
+
+      .track {
+        fill: none;
+        stroke: var(--line);
+        stroke-linecap: square;
+        stroke-width: 9;
+        transition: stroke 220ms ease, opacity 220ms ease;
+      }
+
+      .track-sleeper {
+        fill: none;
+        stroke: var(--line);
+        stroke-dasharray: 2 17;
+        stroke-linecap: square;
+        stroke-width: 18;
+        opacity: 0.32;
+      }
+
+      .switch-dot {
+        fill: var(--white);
+        stroke: var(--ink);
+        stroke-width: 5;
+      }
+
+      .route-panel[data-route="app"] .track-app {
+        stroke: var(--host);
+      }
+
+      .route-panel[data-route="plugin"] .track-plugin {
+        stroke: var(--plugin);
+      }
+
+      .route-panel[data-route="none"] .track-none {
+        stroke: var(--amber);
+      }
+
+      .lane-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+
+      .lane-card {
+        position: relative;
+        border: 1px solid var(--line);
+        background: #f5f8f9;
+        padding: 21px;
+        opacity: 0.45;
+        transform: translateY(5px);
+        transition: opacity 220ms ease, transform 220ms ease, box-shadow 220ms ease;
+      }
+
+      .route-panel[data-route="app"] .lane-card.app,
+      .route-panel[data-route="plugin"] .lane-card.plugin,
+      .route-panel[data-route="none"] .lane-card.none {
+        opacity: 1;
+        transform: translateY(0);
+        box-shadow: 7px 7px 0 var(--paper-deep);
+      }
+
+      .lane-card::before {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 5px;
+        content: "";
+      }
+
+      .lane-card.app::before {
+        background: var(--host);
+      }
+
+      .lane-card.plugin::before {
+        background: var(--plugin);
+      }
+
+      .lane-card.none::before {
+        background: var(--amber);
+      }
+
+      .lane-card small {
+        color: var(--ink-soft);
+        font-family: var(--mono);
+        font-size: 0.67rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .lane-card h3 {
+        margin: 9px 0 13px;
+        font-family: var(--display);
+        font-size: 1.3rem;
+      }
+
+      .lane-card dl {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 5px 12px;
+        margin: 0;
+        font-size: 0.8rem;
+      }
+
+      .lane-card dt {
+        color: var(--ink-soft);
+      }
+
+      .lane-card dd {
+        margin: 0;
+        font-weight: 700;
+      }
+
+      .none-card {
+        display: none;
+        grid-column: 1 / -1;
+      }
+
+      .route-panel[data-route="none"] .lane-card.app,
+      .route-panel[data-route="none"] .lane-card.plugin {
+        display: none;
+      }
+
+      .route-panel[data-route="none"] .none-card {
+        display: block;
+      }
+
+      .matrix-section,
+      .flow-section,
+      .safety-section {
+        padding-top: 112px;
+      }
+
+      .matrix-wrap {
+        overflow-x: auto;
+        border-top: 2px solid var(--ink);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: rgba(251, 253, 254, 0.56);
+        font-size: 0.92rem;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 16px 14px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--ink-soft);
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      td:first-child {
+        min-width: 215px;
+        font-family: var(--mono);
+        font-size: 0.78rem;
+      }
+
+      .route-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        white-space: nowrap;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .route-badge::before {
+        width: 9px;
+        height: 9px;
+        content: "";
+      }
+
+      .route-badge.app {
+        color: var(--host-dark);
+      }
+
+      .route-badge.app::before {
+        background: var(--host);
+      }
+
+      .route-badge.plugin {
+        color: var(--plugin-dark);
+      }
+
+      .route-badge.plugin::before {
+        background: var(--plugin);
+      }
+
+      .route-badge.none {
+        color: #8c561f;
+      }
+
+      .route-badge.none::before {
+        background: var(--amber);
+      }
+
+      .flow-board {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border: 1px solid var(--ink);
+        background: var(--white);
+      }
+
+      .flow-lane {
+        padding: clamp(26px, 4vw, 46px);
+      }
+
+      .flow-lane + .flow-lane {
+        border-left: 1px solid var(--ink);
+      }
+
+      .flow-lane.app {
+        background: linear-gradient(145deg, rgba(49, 94, 251, 0.08), transparent 56%);
+      }
+
+      .flow-lane.plugin {
+        background: linear-gradient(145deg, rgba(0, 143, 125, 0.1), transparent 56%);
+      }
+
+      .flow-title {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 30px;
+      }
+
+      .flow-title h3 {
+        margin: 0;
+        font-family: var(--display);
+        font-size: 1.55rem;
+      }
+
+      .restart-flag {
+        font-family: var(--mono);
+        font-size: 0.67rem;
+        font-weight: 800;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .flow-lane.app .restart-flag {
+        color: var(--host-dark);
+      }
+
+      .flow-lane.plugin .restart-flag {
+        color: var(--plugin-dark);
+      }
+
+      .steps {
+        display: grid;
+        gap: 0;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: step;
+      }
+
+      .steps li {
+        display: grid;
+        grid-template-columns: 35px 1fr;
+        gap: 14px;
+        position: relative;
+        min-height: 66px;
+        counter-increment: step;
+      }
+
+      .steps li::before {
+        display: grid;
+        z-index: 1;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border: 1px solid currentColor;
+        border-radius: 50%;
+        background: var(--white);
+        content: counter(step, decimal-leading-zero);
+        font-family: var(--mono);
+        font-size: 0.64rem;
+        font-weight: 800;
+      }
+
+      .steps li:not(:last-child)::after {
+        position: absolute;
+        top: 31px;
+        bottom: 0;
+        left: 15px;
+        width: 1px;
+        background: var(--line);
+        content: "";
+      }
+
+      .steps strong {
+        display: block;
+        margin: 3px 0 2px;
+        font-size: 0.91rem;
+      }
+
+      .steps span {
+        color: var(--ink-soft);
+        font-size: 0.82rem;
+      }
+
+      .safety-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(300px, 0.62fr);
+        gap: 28px;
+      }
+
+      .safety-cards {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+      }
+
+      .safety-card {
+        min-height: 176px;
+        border: 1px solid var(--line);
+        background: rgba(251, 253, 254, 0.72);
+        padding: 23px;
+      }
+
+      .safety-card .icon {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        margin-bottom: 25px;
+        border: 1px solid var(--ink);
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        font-weight: 800;
+      }
+
+      .safety-card strong {
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      .safety-card p {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 0.83rem;
+      }
+
+      .guardrail {
+        border: 1px solid var(--ink);
+        background: var(--ink);
+        padding: 29px;
+        color: white;
+      }
+
+      .guardrail .section-kicker {
+        color: #8de2d3;
+      }
+
+      .guardrail h3 {
+        margin-bottom: 10px;
+        font-family: var(--display);
+        font-size: 1.65rem;
+      }
+
+      .guardrail > p {
+        color: #bfd0d5;
+        font-size: 0.88rem;
+      }
+
+      .guardrail-list {
+        margin: 24px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .guardrail-list li {
+        border-top: 1px solid rgba(255, 255, 255, 0.18);
+        padding: 12px 0;
+        color: #eaf4f6;
+        font-family: var(--mono);
+        font-size: 0.74rem;
+      }
+
+      .topology {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 20px;
+        align-items: stretch;
+        margin-top: 28px;
+        border: 1px solid var(--line);
+        background: rgba(251, 253, 254, 0.7);
+        padding: 20px;
+      }
+
+      .repo-card {
+        padding: 21px;
+        border: 1px solid var(--line);
+        background: var(--white);
+      }
+
+      .repo-card small {
+        display: block;
+        margin-bottom: 7px;
+        color: var(--ink-soft);
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .repo-card strong {
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      .repo-card p {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 0.83rem;
+      }
+
+      .topology-divider {
+        display: grid;
+        min-width: 95px;
+        place-items: center;
+        color: var(--ink-soft);
+        font-family: var(--mono);
+        font-size: 0.64rem;
+        letter-spacing: 0.08em;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      footer {
+        margin-top: 116px;
+        border-top: 1px solid var(--ink);
+        padding: 28px 0 46px;
+      }
+
+      .footer-grid {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 32px;
+      }
+
+      .footer-grid strong {
+        font-family: var(--display);
+        font-size: 1.05rem;
+      }
+
+      .footer-grid p {
+        max-width: 650px;
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 0.84rem;
+      }
+
+      .reveal {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 600ms ease, transform 600ms ease;
+      }
+
+      .reveal.in-view {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      @media (max-width: 900px) {
+        .hero,
+        .section-heading,
+        .safety-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          min-height: auto;
+          padding-top: 90px;
+        }
+
+        .hero-aside {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+
+        .lab-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .scenario-panel {
+          border-right: 0;
+          border-bottom: 1px solid var(--ink);
+        }
+
+        .scenario-list {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .flow-board {
+          grid-template-columns: 1fr;
+        }
+
+        .flow-lane + .flow-lane {
+          border-top: 1px solid var(--ink);
+          border-left: 0;
+        }
+      }
+
+      @media (max-width: 620px) {
+        .shell {
+          width: min(100% - 24px, 1240px);
+        }
+
+        .masthead {
+          align-items: flex-start;
+          gap: 14px;
+        }
+
+        .status-tag {
+          max-width: 145px;
+          text-align: right;
+        }
+
+        h1 {
+          font-size: clamp(3.35rem, 18vw, 5rem);
+        }
+
+        .hero-aside,
+        .scenario-list,
+        .lane-cards,
+        .safety-cards,
+        .topology {
+          grid-template-columns: 1fr;
+        }
+
+        .proof-strip {
+          grid-template-columns: 1fr;
+        }
+
+        .route-panel {
+          padding: 22px 16px 28px;
+        }
+
+        .route-decision {
+          display: grid;
+        }
+
+        .route-visual {
+          grid-template-rows: 130px auto;
+        }
+
+        .route-svg {
+          height: 130px;
+        }
+
+        .matrix-section,
+        .flow-section,
+        .safety-section {
+          padding-top: 86px;
+        }
+
+        .topology-divider {
+          min-height: 44px;
+        }
+
+        .footer-grid {
+          display: grid;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
+
+        .reveal {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+
+        body::before,
+        .scenario-panel {
+          display: none;
+        }
+
+        .shell {
+          width: 100%;
+        }
+
+        .hero {
+          min-height: auto;
+          padding: 30px 0;
+        }
+
+        .lab-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .routing-lab,
+        .proof-strip {
+          box-shadow: none;
+        }
+
+        .reveal {
+          opacity: 1;
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="shell">
+      <div class="masthead">
+        <div class="wordmark"><span class="wordmark-mark">T</span> Termco architecture map</div>
+        <div class="status-tag">Implemented locally · feed and trust key configured</div>
+      </div>
+
+      <div class="hero">
+        <div>
+          <p class="eyebrow">Update strategy / decision overview</p>
+          <h1>One product.<br /><span class="lane-word">Two update lanes.</span></h1>
+          <p class="hero-copy">
+            Keep Electron responsible for the installed application. Let the plugin platform deliver
+            compatible features independently. The result: fewer heavyweight downloads, live plugin
+            activation, and one dependable recovery path.
+          </p>
+        </div>
+        <aside class="hero-aside" aria-label="The two update rules">
+          <div class="rule-card host">
+            <strong>Host changed</strong>
+            <span><code>src/</code>, <code>electron/</code>, platform or native dependencies</span>
+          </div>
+          <div class="rule-card plugin">
+            <strong>Plugin changed</strong>
+            <span>Eligible code under the plugin repository's <code>plugins/</code> directory</span>
+          </div>
+        </aside>
+      </div>
+
+      <div class="proof-strip">
+        <span class="proof-mark" aria-hidden="true">✓</span>
+        <p>
+          <strong>The complete path is proven in a packaged Electron build.</strong>
+          A thin packaged application started with empty user data, pulled all 100 plugins from the
+          public feed, verified its Ed25519 manifest and archive digest, compiled and activated the
+          set, then restarted without setup and performed exactly one automatic feed check.
+        </p>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section aria-labelledby="router-title">
+        <div class="section-heading reveal">
+          <div>
+            <p class="section-kicker">The routing switch</p>
+            <h2 id="router-title">Where does this change go?</h2>
+          </div>
+          <p class="section-intro">
+            Pick an example. The switch applies the release rules and highlights the delivery
+            path, owner, payload, and restart behavior.
+          </p>
+        </div>
+
+        <div class="routing-lab reveal">
+          <div class="lab-topbar">
+            <span>Release classifier / interactive preview</span>
+            <span class="lab-leds" aria-hidden="true"><span></span><span></span><span></span></span>
+          </div>
+          <div class="lab-grid">
+            <div class="scenario-panel">
+              <p class="panel-label">Choose a change</p>
+              <div class="scenario-list" role="group" aria-label="Example repository changes">
+                <button class="scenario-button" type="button" data-scenario="src" aria-pressed="true">
+                  <strong>Host application code</strong>
+                  <span>src/ or electron/</span>
+                </button>
+                <button class="scenario-button" type="button" data-scenario="plugin" aria-pressed="false">
+                  <strong>Existing plugin code</strong>
+                  <span>plugin repository / plugins/preview-surface-native</span>
+                </button>
+                <button class="scenario-button" type="button" data-scenario="new-plugin" aria-pressed="false">
+                  <strong>New compatible plugin</strong>
+                  <span>APIs + dependencies already shipped</span>
+                </button>
+                <button class="scenario-button" type="button" data-scenario="main-plugin" aria-pressed="false">
+                  <strong>Main-process plugin</strong>
+                  <span>plugin entrypoint: main</span>
+                </button>
+                <button class="scenario-button" type="button" data-scenario="native" aria-pressed="false">
+                  <strong>New native dependency</strong>
+                  <span>Electron ABI or host package changes</span>
+                </button>
+                <button class="scenario-button" type="button" data-scenario="protected" aria-pressed="false">
+                  <strong>Protected core plugin</strong>
+                  <span>updater, recovery or essential shell</span>
+                </button>
+                <button class="scenario-button" type="button" data-scenario="docs" aria-pressed="false">
+                  <strong>Tests or documentation</strong>
+                  <span>no runtime files changed</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="route-panel" data-route="app" aria-live="polite">
+              <div class="route-decision">
+                <span class="decision-code" id="decision-code">APP UPDATE</span>
+                <div>
+                  <strong id="decision-title">Ship the signed Electron application</strong>
+                  <p id="decision-reason">
+                    This code is compiled into the installed host and cannot be replaced through the
+                    plugin cache.
+                  </p>
+                </div>
+              </div>
+
+              <div class="route-visual">
+                <svg class="route-svg" viewBox="0 0 720 190" role="img" aria-label="A rail switch splitting into application and plugin update routes">
+                  <path class="track-sleeper" d="M10 95 H235 M235 95 C340 95 340 35 470 35 H710" />
+                  <path class="track-sleeper" d="M235 95 C340 95 340 155 470 155 H710" />
+                  <path class="track track-none" d="M10 95 H235" />
+                  <path class="track track-app" d="M235 95 C340 95 340 35 470 35 H710" />
+                  <path class="track track-plugin" d="M235 95 C340 95 340 155 470 155 H710" />
+                  <circle class="switch-dot" cx="235" cy="95" r="11" />
+                </svg>
+
+                <div class="lane-cards">
+                  <article class="lane-card app">
+                    <small>Upper lane / installed host</small>
+                    <h3>Application update</h3>
+                    <dl>
+                      <dt>Owner</dt><dd>electron-updater</dd>
+                      <dt>Payload</dt><dd>Signed installer</dd>
+                      <dt>Feed</dt><dd>Application releases</dd>
+                      <dt>Restart</dt><dd>Required</dd>
+                    </dl>
+                  </article>
+                  <article class="lane-card plugin">
+                    <small>Lower lane / runtime features</small>
+                    <h3>Plugin-only update</h3>
+                    <dl>
+                      <dt>Owner</dt><dd>PluginReleaseManager</dd>
+                      <dt>Payload</dt><dd>Signed atomic set</dd>
+                      <dt>Feed</dt><dd>Plugin releases</dd>
+                      <dt>Restart</dt><dd>Not normally</dd>
+                    </dl>
+                  </article>
+                  <article class="lane-card none none-card">
+                    <small>Outside both runtime lanes</small>
+                    <h3>No product release</h3>
+                    <p>Verification and documentation changes alone do not produce a runtime artifact.</p>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="matrix-section" aria-labelledby="matrix-title">
+        <div class="section-heading reveal">
+          <div>
+            <p class="section-kicker">Decision matrix</p>
+            <h2 id="matrix-title">The rule at a glance</h2>
+          </div>
+          <p class="section-intro">
+            Repository ownership makes the normal route explicit. Host and protected-core changes
+            live in Termco; compatible feature plugins live in the plugin repository. Any dependency
+            or contract expansion still requires a new application baseline.
+          </p>
+        </div>
+
+        <div class="matrix-wrap reveal">
+          <table>
+            <thead>
+              <tr>
+                <th>Changed area</th>
+                <th>Delivery route</th>
+                <th>Why</th>
+                <th>Restart</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>src/**</td>
+                <td><span class="route-badge app">Application</span></td>
+                <td>Renderer host, shared runtime and platform code are built into the application.</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td>electron/**</td>
+                <td><span class="route-badge app">Application</span></td>
+                <td>Main host and preload establish the trusted runtime.</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td>package.json, lockfile, compiler, packaging</td>
+                <td><span class="route-badge app">Application</span></td>
+                <td>The installed dependency or build environment changed.</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td>plugin repository / plugins/&lt;eligible-plugin&gt;/**</td>
+                <td><span class="route-badge plugin">Plugin set</span></td>
+                <td>Publish a complete compatible snapshot and activate only after every plugin prepares.</td>
+                <td>No</td>
+              </tr>
+              <tr>
+                <td>plugin with a main entrypoint</td>
+                <td><span class="route-badge plugin">Plugin set</span></td>
+                <td>Main-process execution is still plugin code and supports live replacement.</td>
+                <td>No</td>
+              </tr>
+              <tr>
+                <td>new compatible plugin + profile insertion</td>
+                <td><span class="route-badge plugin">Plugin set</span></td>
+                <td>Allowed when every required API and dependency already ships in the host.</td>
+                <td>No</td>
+              </tr>
+              <tr>
+                <td>*-base contracts, new native dependency, protected core</td>
+                <td><span class="route-badge app">Application</span></td>
+                <td>Conservative v1 guardrail: ship a new trusted baseline.</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td>tests, comments or docs only</td>
+                <td><span class="route-badge none">No release</span></td>
+                <td>No runtime artifact changed.</td>
+                <td>—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="flow-section" aria-labelledby="flow-title">
+        <div class="section-heading reveal">
+          <div>
+            <p class="section-kicker">Delivery flows</p>
+            <h2 id="flow-title">Different payloads, one update surface</h2>
+          </div>
+          <p class="section-intro">
+            Users see one Software Updates experience. Behind it, each lane keeps the responsibility it
+            already understands.
+          </p>
+        </div>
+
+        <div class="flow-board reveal">
+          <article class="flow-lane app">
+            <div class="flow-title">
+              <h3>Full application</h3>
+              <span class="restart-flag">Restart required</span>
+            </div>
+            <ol class="steps">
+              <li><div><strong>Classify host changes</strong><span>CI detects trusted runtime or protected-core changes.</span></div></li>
+              <li><div><strong>Build application targets</strong><span>Electron Builder creates platform installers and metadata.</span></div></li>
+              <li><div><strong>Sign and notarize</strong><span>Production artifacts carry the platform trust chain.</span></div></li>
+              <li><div><strong>Publish application release</strong><span>The application repository remains the normal update feed.</span></div></li>
+              <li><div><strong>Install with electron-updater</strong><span>Download, verify, replace the installed app, then restart.</span></div></li>
+            </ol>
+          </article>
+
+          <article class="flow-lane plugin">
+            <div class="flow-title">
+              <h3>Plugin-only release</h3>
+              <span class="restart-flag">Live activation</span>
+            </div>
+            <ol class="steps">
+              <li><div><strong>Build the complete snapshot</strong><span>The current selected plugin set stays together from signing through activation.</span></div></li>
+              <li><div><strong>Package source</strong><span>The application compiles every plugin into staging before the live transaction begins.</span></div></li>
+              <li><div><strong>Sign release metadata</strong><span>Ed25519 protects plugin identity, compatibility, archive digest and revocations.</span></div></li>
+              <li><div><strong>Provision or offer</strong><span>First launch provisions automatically; later compatible releases present Update or Later.</span></div></li>
+              <li><div><strong>Stage and verify</strong><span>Check host compatibility, target, paths, hashes and complete graph.</span></div></li>
+              <li><div><strong>Activate transactionally</strong><span>Use the proven main/renderer live-replacement transaction.</span></div></li>
+              <li><div><strong>Persist or roll back</strong><span>Keep the previous verified generation ready for recovery.</span></div></li>
+            </ol>
+          </article>
+        </div>
+      </section>
+
+      <section class="safety-section" aria-labelledby="safety-title">
+        <div class="section-heading reveal">
+          <div>
+            <p class="section-kicker">Safety model</p>
+            <h2 id="safety-title">Fast does not mean fragile</h2>
+          </div>
+          <p class="section-intro">
+            Downloaded plugin source and compiled generations persist locally. Seven bundled core
+            plugins own setup, updates, management, diagnostics, and recovery even before the feature
+            snapshot is provisioned.
+          </p>
+        </div>
+
+        <div class="safety-grid reveal">
+          <div class="safety-cards">
+            <article class="safety-card">
+              <span class="icon" aria-hidden="true">01</span>
+              <strong>User customizations win</strong>
+              <p>Custom sources are never overwritten; a conflicting official set is blocked and explained.</p>
+            </article>
+            <article class="safety-card">
+              <span class="icon" aria-hidden="true">02</span>
+              <strong>Bundled recovery remains</strong>
+              <p>The seven protected core plugins remain in the application; downloaded source is committed only after the whole set compiles.</p>
+            </article>
+            <article class="safety-card">
+              <span class="icon" aria-hidden="true">03</span>
+              <strong>Failures roll back</strong>
+              <p>Activation or persistence failures and signed revocations can restore the last verified set.</p>
+            </article>
+            <article class="safety-card">
+              <span class="icon" aria-hidden="true">04</span>
+              <strong>Application updates win</strong>
+              <p>If both lanes have an offer, install the new host baseline before considering plugins.</p>
+            </article>
+          </div>
+
+          <aside class="guardrail">
+            <p class="section-kicker">Full-app guardrail</p>
+            <h3>Protected in v1</h3>
+            <p>These changes deliberately remain on the signed application lane because they define the trusted baseline.</p>
+            <ul class="guardrail-list">
+              <li>updater-native</li>
+              <li>safe-recovery-native + boot-diagnostics-native</li>
+              <li>ui-shell-native + workspace-shell-native</li>
+              <li>settings-native + plugin-manager-native</li>
+              <li>contract-only *-base packages</li>
+              <li>new host APIs or native dependencies</li>
+            </ul>
+          </aside>
+        </div>
+
+        <div class="topology reveal" aria-label="Separate GitHub release feeds">
+          <article class="repo-card">
+            <small>Repository A / application feed</small>
+            <strong>Signed Electron releases</strong>
+            <p>Installers, blockmaps and update metadata consumed by <code>electron-updater</code>.</p>
+          </article>
+          <div class="topology-divider">Separate feeds<br />one UI</div>
+          <article class="repo-card">
+            <small>Repository B / plugin feed</small>
+            <strong>Plugin source + signed snapshots</strong>
+            <p>Canonical official-plugin source, profiles, release workflow, manifests, and ZIPs consumed by <code>PluginReleaseManager</code>.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="shell footer-grid">
+        <strong>Termco update architecture</strong>
+        <p>
+          Current default: stable channel, first-launch provisioning, one automatic check per start,
+          complete signed snapshots from the plugin repository, explicit confirmation for later
+          plugin updates, and <code>electron-updater</code> for application releases.
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      const scenarios = {
+        src: {
+          route: "app",
+          code: "APP UPDATE",
+          title: "Ship the signed Electron application",
+          reason: "This code is compiled into the installed host and cannot be replaced through the plugin cache.",
+        },
+        plugin: {
+          route: "plugin",
+          code: "PLUGIN SET",
+          title: "Publish a complete compatible plugin snapshot",
+          reason: "The installed host already supports this plugin contract, so the signed set can be staged and activated live.",
+        },
+        "new-plugin": {
+          route: "plugin",
+          code: "PLUGIN SET",
+          title: "Add the plugin without replacing Electron",
+          reason: "The release includes signed source and profile insertion; the installed application compiles it in staging because every dependency already ships.",
+        },
+        "main-plugin": {
+          route: "plugin",
+          code: "PLUGIN SET",
+          title: "Main-process still means plugin code",
+          reason: "A main entrypoint runs in Electron’s main process, but the existing transaction can still replace its plugin generation live.",
+        },
+        native: {
+          route: "app",
+          code: "APP UPDATE",
+          title: "Refresh the installed dependency baseline",
+          reason: "A native or Electron ABI change must be packaged, signed and shipped with the complete application.",
+        },
+        protected: {
+          route: "app",
+          code: "APP UPDATE",
+          title: "Protect the updater and recovery path",
+          reason: "The conservative v1 policy keeps trust, safe recovery and essential management surfaces in the signed host release.",
+        },
+        docs: {
+          route: "none",
+          code: "NO RELEASE",
+          title: "Merge without publishing runtime code",
+          reason: "Tests and documentation improve the repository but do not change an artifact installed by users.",
+        },
+      };
+
+      const routePanel = document.querySelector(".route-panel");
+      const decisionCode = document.querySelector("#decision-code");
+      const decisionTitle = document.querySelector("#decision-title");
+      const decisionReason = document.querySelector("#decision-reason");
+      const buttons = [...document.querySelectorAll(".scenario-button")];
+
+      function selectScenario(button) {
+        const scenario = scenarios[button.dataset.scenario];
+        if (!scenario) return;
+        for (const candidate of buttons) {
+          candidate.setAttribute("aria-pressed", String(candidate === button));
+        }
+        routePanel.dataset.route = scenario.route;
+        decisionCode.textContent = scenario.code;
+        decisionTitle.textContent = scenario.title;
+        decisionReason.textContent = scenario.reason;
+      }
+
+      for (const button of buttons) {
+        button.addEventListener("click", () => selectScenario(button));
+      }
+
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const reveals = [...document.querySelectorAll(".reveal")];
+      if (reducedMotion || !("IntersectionObserver" in window)) {
+        reveals.forEach((element) => element.classList.add("in-view"));
+      } else {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+              entry.target.classList.add("in-view");
+              observer.unobserve(entry.target);
+            }
+          },
+          { threshold: 0.12 },
+        );
+        reveals.forEach((element) => observer.observe(element));
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,169 @@
+import { promises as fs } from "node:fs";
+import { join, relative } from "node:path";
+import { normalizeLineEndings } from "./text-content.mjs";
+
+const repositoryRoot = process.cwd();
+const pluginsRoot = join(repositoryRoot, "plugin-repository", "plugins");
+const generatedFile = join(
+  pluginsRoot,
+  "ui-shell-base/src/generated/authoringCatalog.ts",
+);
+const check = process.argv.includes("--check");
+
+const requiredText = [
+  "service",
+  "aliases",
+  "contractPackage",
+  "serviceConstant",
+  "registryType",
+  "contributionType",
+  "collisionPolicy",
+  "reveal",
+  "minimalUsage",
+];
+
+function fail(message) {
+  throw new Error(`[plugin-authoring-catalog] ${message}`);
+}
+
+async function packageDirectories() {
+  const entries = await fs.readdir(pluginsRoot, { withFileTypes: true });
+  return entries
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith("ui-") && entry.name.endsWith("-base"))
+    .map((entry) => join(pluginsRoot, entry.name))
+    .sort();
+}
+
+async function readDescriptors(directory) {
+  const descriptorFile = join(directory, "plugin-authoring.json");
+  try {
+    const parsed = JSON.parse(await fs.readFile(descriptorFile, "utf8"));
+    if (!Array.isArray(parsed)) fail(`${relative(repositoryRoot, descriptorFile)} must contain an array`);
+    return { descriptorFile, descriptors: parsed };
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+function registeredUiRegistries(source) {
+  const result = [];
+  const pattern = /export interface (Ui[A-Za-z0-9]+Registry)\s*\{([\s\S]*?)\n\}/g;
+  for (const match of source.matchAll(pattern)) {
+    if (/\bregister\s*\(/.test(match[2])) result.push(match[1]);
+  }
+  return result;
+}
+
+function validateDescriptor(descriptor, file, packageName, source) {
+  if (!descriptor || typeof descriptor !== "object" || Array.isArray(descriptor)) {
+    fail(`${file} contains a non-object descriptor`);
+  }
+  for (const field of requiredText) {
+    if (typeof descriptor[field] !== "string" || descriptor[field].trim() === "") {
+      fail(`${file}: ${String(descriptor.service ?? "unknown")} has invalid ${field}`);
+    }
+  }
+  if (!Array.isArray(descriptor.requiredFields) || descriptor.requiredFields.length === 0) {
+    fail(`${file}: ${descriptor.service} must declare requiredFields`);
+  }
+  if (
+    !descriptor.verification ||
+    typeof descriptor.verification.target !== "string" ||
+    typeof descriptor.verification.postcondition !== "string"
+  ) {
+    fail(`${file}: ${descriptor.service} must declare verification target and postcondition`);
+  }
+  if (descriptor.contractPackage !== packageName) {
+    fail(`${file}: ${descriptor.service} claims ${descriptor.contractPackage}, expected ${packageName}`);
+  }
+  for (const exportedName of [
+    descriptor.serviceConstant,
+    descriptor.registryType,
+    descriptor.contributionType,
+  ]) {
+    if (!source.includes(exportedName)) {
+      fail(`${file}: ${descriptor.service} references missing export ${exportedName}`);
+    }
+  }
+}
+
+const directories = await packageDirectories();
+const descriptors = [];
+const discoveredRegistries = new Map();
+for (const directory of directories) {
+  const sourceFile = join(directory, "src/index.ts");
+  let source;
+  try {
+    source = await fs.readFile(sourceFile, "utf8");
+  } catch (error) {
+    if (error?.code === "ENOENT") continue;
+    throw error;
+  }
+  for (const registry of registeredUiRegistries(source)) {
+    discoveredRegistries.set(registry, relative(repositoryRoot, sourceFile));
+  }
+  const owned = await readDescriptors(directory);
+  if (!owned) continue;
+  const packageJson = JSON.parse(await fs.readFile(join(directory, "package.json"), "utf8"));
+  for (const descriptor of owned.descriptors) {
+    validateDescriptor(
+      descriptor,
+      relative(repositoryRoot, owned.descriptorFile),
+      packageJson.name,
+      source,
+    );
+    descriptors.push(descriptor);
+  }
+}
+
+descriptors.sort((left, right) => left.service.localeCompare(right.service));
+const byService = new Map();
+const describedRegistries = new Set();
+for (const descriptor of descriptors) {
+  if (byService.has(descriptor.service)) {
+    fail(`service ${descriptor.service} is described more than once`);
+  }
+  byService.set(descriptor.service, descriptor);
+  if (describedRegistries.has(descriptor.registryType)) {
+    fail(`registry ${descriptor.registryType} is described more than once`);
+  }
+  describedRegistries.add(descriptor.registryType);
+}
+for (const [registry, sourceFile] of discoveredRegistries) {
+  if (!describedRegistries.has(registry)) {
+    fail(`${sourceFile} exports authoring registry ${registry} without plugin-authoring.json metadata`);
+  }
+}
+for (const registry of describedRegistries) {
+  if (!discoveredRegistries.has(registry)) {
+    fail(`descriptor references ${registry}, but no matching UI registry exists`);
+  }
+}
+
+const generatedSource = `// Generated by scripts/gen-plugin-authoring-catalog.mjs. Do not edit.\n` +
+  `export const UI_CONTRIBUTION_AUTHORING_DESCRIPTORS = ${JSON.stringify(descriptors, null, 2)} as const;\n\n` +
+  `export type UiContributionCapability =\n` +
+  `  (typeof UI_CONTRIBUTION_AUTHORING_DESCRIPTORS)[number]["service"];\n`;
+
+async function writeOrCheck(file, content) {
+  if (check) {
+    let current = "";
+    try {
+      current = await fs.readFile(file, "utf8");
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+    if (normalizeLineEndings(current) !== normalizeLineEndings(content)) {
+      fail(`${relative(repositoryRoot, file)} is stale; run node scripts/gen-plugin-authoring-catalog.mjs`);
+    }
+    return;
+  }
+  await fs.mkdir(join(file, ".."), { recursive: true });
+  await fs.writeFile(file, content);
+}
+
+await writeOrCheck(generatedFile, generatedSource);
+console.log(
+  `[plugin-authoring-catalog] ${check ? "verified" : "generated"} ${descriptors.length} contribution contracts`,
+);

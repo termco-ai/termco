@@ -1,0 +1,11 @@
+{
+  "name": "@company/counter-consumer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@company/counter-base": "file:../company-counter-base",
+    "@termco/kernel": "1.0.0"
+  },
+  "exports": "./src/main.ts"
+}

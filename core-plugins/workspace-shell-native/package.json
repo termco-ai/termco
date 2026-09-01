@@ -1,0 +1,29 @@
+{
+  "name": "@termco-plugin/workspace-shell-native",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@termco/agents-base": "1.0.0",
+    "@termco/ai-live-base": "1.0.0",
+    "@termco/ai-sessions-base": "1.0.0",
+    "@termco/browser-base": "1.0.0",
+    "@termco/desktop-base": "1.0.0",
+    "@termco/editor-base": "1.0.0",
+    "@termco/kernel": "1.0.0",
+    "@termco/shortcuts-base": "1.0.0",
+    "@termco/storage-base": "1.0.0",
+    "@termco/terminal-base": "1.0.0",
+    "@termco/ui-agents-base": "1.0.0",
+    "@termco/ui": "1.0.0",
+    "@termco/ui-commands-base": "1.0.0",
+    "@termco/ui-change-reveal-base": "1.0.0",
+    "@termco/ui-header-base": "1.0.0",
+    "@termco/ui-settings-base": "1.0.0",
+    "@termco/ui-shell-base": "1.0.0",
+    "@termco/ui-sidebar-base": "1.0.0",
+    "@termco/ui-tabs-base": "1.0.0",
+    "@termco/ui-workspace-base": "1.0.0",
+    "@termco/workspace-base": "1.0.0"
+  }
+}

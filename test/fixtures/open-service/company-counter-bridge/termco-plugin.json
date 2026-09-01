@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 3,
+  "id": "company.counter-bridge",
+  "name": "Company Counter Renderer Bridge",
+  "description": "Projects the company counter through the generic process transport.",
+  "category": "Company examples",
+  "version": "1.0.0",
+  "entrypoints": { "renderer": "src/renderer.ts" },
+  "dependencies": {
+    "@company/counter-base": "1.0.0",
+    "@termco/kernel": "1.0.0"
+  },
+  "activation": "eager"
+}

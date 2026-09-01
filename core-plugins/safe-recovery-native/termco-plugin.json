@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 3,
+  "id": "safe-recovery-native",
+  "name": "Safe Profile Recovery",
+  "description": "Shows the exact failed profile and error, then opens the real plugin manager for recovery.",
+  "category": "Recovery",
+  "version": "1.0.0",
+  "entrypoints": {
+    "renderer": "src/renderer.tsx"
+  },
+  "dependencies": {
+    "@testing-library/react": "^16.3.2",
+    "react": "^19.2.7",
+    "@termco/application-base": "1.0.0",
+    "@termco/kernel": "1.0.0",
+    "@termco/profile-base": "1.0.0",
+    "@termco/ui-overlays-base": "1.0.0",
+    "@termco/ui-settings-base": "1.0.0"
+  },
+  "activation": "eager"
+}

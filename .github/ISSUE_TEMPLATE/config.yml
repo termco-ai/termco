@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Request a feature
+    url: https://github.com/termco-ai/termco/discussions/categories/ideas
+    about: Describe the workflow and desired outcome before implementation is scoped.
+  - name: Propose a plugin
+    url: https://github.com/termco-ai/termco/discussions/categories/plugin-ideas
+    about: Suggest a new plugin or a change to an official plugin.
+  - name: Ask a question
+    url: https://github.com/termco-ai/termco/discussions/categories/q-a
+    about: Get installation, configuration, and usage help from the community.
+  - name: Report a security vulnerability
+    url: https://github.com/termco-ai/termco/security/advisories/new
+    about: Send security-sensitive reports privately to the maintainers.

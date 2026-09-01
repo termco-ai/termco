@@ -1,0 +1,46 @@
+diff --git a/dist/react-resizable-panels.js b/dist/react-resizable-panels.js
+index dce7e7bbe9f31f07fc02acfb8eaefc27a94364b0..6a704e30db4a8194220fac1880ceafa265b55179 100644
+--- a/dist/react-resizable-panels.js
++++ b/dist/react-resizable-panels.js
+@@ -1432,7 +1432,18 @@ function Vt(e) {
+     e.element.ownerDocument.defaultView,
+     "Cannot register an unmounted Group"
+   );
+-  const n = e.element.ownerDocument.defaultView.ResizeObserver, o = /* @__PURE__ */ new Set(), i = /* @__PURE__ */ new Set(), s = new n((f) => {
++  const resizeWindow = e.element.ownerDocument.defaultView;
++  const n = resizeWindow.ResizeObserver, o = /* @__PURE__ */ new Set(), i = /* @__PURE__ */ new Set();
++  const pendingEntries = /* @__PURE__ */ new Map();
++  let resizeFrame = 0;
++  const flushEntries = () => {
++    resizeFrame = 0;
++    if (!t) {
++      pendingEntries.clear();
++      return;
++    }
++    const f = Array.from(pendingEntries.values());
++    pendingEntries.clear();
+     for (const d of f) {
+       const { borderBoxSize: h, target: y } = d;
+       if (y === e.element) {
+@@ -1468,6 +1479,12 @@ function Vt(e) {
+       } else
+         _t(e, y, h);
+     }
++  };
++  const s = new n((f) => {
++    for (const d of f)
++      pendingEntries.set(d.target, d);
++    if (resizeFrame === 0)
++      resizeFrame = resizeWindow.requestAnimationFrame(flushEntries);
+   });
+   s.observe(e.element), e.panels.forEach((f) => {
+     C(
+@@ -1514,7 +1531,7 @@ function Vt(e) {
+       "pointerdown",
+       Ae,
+       !0
+-    ), p.removeEventListener("pointerleave", je), p.removeEventListener("pointermove", He), p.removeEventListener("pointerout", Ve), p.removeEventListener("pointerup", Ue, !0)), s.disconnect();
++    ), p.removeEventListener("pointerleave", je), p.removeEventListener("pointermove", He), p.removeEventListener("pointerout", Ve), p.removeEventListener("pointerup", Ue, !0)), resizeFrame && resizeWindow.cancelAnimationFrame(resizeFrame), pendingEntries.clear(), s.disconnect();
+   };
+ }
+ function Ut() {

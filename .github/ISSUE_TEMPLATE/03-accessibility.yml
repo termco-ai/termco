@@ -1,0 +1,38 @@
+name: Accessibility problem
+description: Report a barrier affecting keyboard, screen-reader, visual, motor, or cognitive access.
+title: "[Accessibility]: "
+labels: ["accessibility", "status:triage"]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Screen or workflow
+      placeholder: "Settings → Models"
+    validations:
+      required: true
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact
+      options: ["Blocks the workflow", "Makes the workflow difficult", "Causes confusion or discomfort", "Other"]
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: Assistive technology or relevant setup
+      description: Include the operating system, input method, browser, screen reader, zoom level, or contrast mode when relevant.
+    validations:
+      required: false
+  - type: textarea
+    id: expected
+    attributes:
+      label: What would make this usable?
+    validations:
+      required: true

@@ -1,0 +1,14 @@
+{
+  "name": "@termco/plugin-safe-recovery-native",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "react": "^19.2.7",
+    "@termco/application-base": "1.0.0",
+    "@termco/kernel": "1.0.0",
+    "@termco/profile-base": "1.0.0",
+    "@termco/ui-overlays-base": "1.0.0",
+    "@termco/ui-settings-base": "1.0.0"
+  }
+}

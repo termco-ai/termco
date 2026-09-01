@@ -1,0 +1,109 @@
+# Dependencies
+node_modules
+.termco-cache/
+.pnpm-store
+
+# Build output
+dist
+dist-ssr
+dist-electron
+release
+plugin-release-artifacts
+out
+stats.html
+*.tsbuildinfo
+*.tgz
+
+# Test / coverage
+coverage
+.bench-results/
+.vitest
+*.lcov
+
+# Playwright E2E artifacts (traces, screenshots, videos, html report)
+e2e/.output
+e2e/.report
+e2e/.perf
+test-results
+playwright-report
+.playwright
+blob-report
+junit.xml
+.nyc_output
+
+# Caches
+.vite
+.cache
+.turbo
+.eslintcache
+.parcel-cache
+.electron-vite
+.rollup.cache
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.pid
+*.pid.lock
+*.seed
+*.cpuprofile
+*.heapprofile
+*.heapsnapshot
+*.prof
+
+# Local env / secrets (this app stores keys in the OS keychain, but never commit
+# an .env just in case)
+.env
+.env.*
+!.env.example
+!.env.e2e.example
+*.local
+*.pem
+*.key
+*.p8
+*.cer
+*.p12
+*.pfx
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Temporary working directories
+tmp
+temp
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+.fleet
+.history
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.orig
+*.rej
+*~
+.DS_Store
+.AppleDouble
+._*
+Thumbs.db
+Desktop.ini
+
+# NOTE: build/ (electron-builder resources: entitlements + icon), resources/
+# (shell-integration scripts), and all config files are intentionally tracked.
+
+# Local-only tool state and prompt material
+/prompt-base/
+.codex/
+.agents/
+.claude/
+.impeccable/

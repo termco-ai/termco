@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 3,
+  "id": "settings-native",
+  "name": "Settings Application",
+  "description": "Owns settings visibility, categorized navigation, cross-section search, section isolation, and the complete workspace settings view.",
+  "category": "Interface",
+  "version": "1.0.0",
+  "entrypoints": {
+    "renderer": "src/renderer.tsx"
+  },
+  "dependencies": {
+    "@hugeicons/core-free-icons": "^4.2.0",
+    "@hugeicons/react": "^1.1.7",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@termco/ui": "1.0.0",
+    "@testing-library/react": "^16.3.2",
+    "react": "^19.2.7",
+    "@termco/application-base": "1.0.0",
+    "@termco/kernel": "1.0.0",
+    "@termco/ui-settings-base": "1.0.0",
+    "@termco/ui-change-reveal-base": "1.0.0",
+    "@termco/ui-theme-base": "1.0.0",
+    "@termco/ui-workspace-base": "1.0.0"
+  },
+  "activation": "eager"
+}

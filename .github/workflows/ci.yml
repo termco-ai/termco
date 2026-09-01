@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Use installed Node headers
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          NODE_ROOT="$(node -p 'require("node:path").dirname(require("node:path").dirname(process.execPath))')"
+          test -f "$NODE_ROOT/include/node/node.h"
+          echo "npm_package_config_node_gyp_nodedir=$NODE_ROOT" >> "$GITHUB_ENV"
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check-types
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm test:electron
+      - run: pnpm build
+
+  plugin-tests:
+    name: plugin-tests (${{ matrix.shard }}/4)
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Use installed Node headers
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          NODE_ROOT="$(node -p 'require("node:path").dirname(require("node:path").dirname(process.execPath))')"
+          test -f "$NODE_ROOT/include/node/node.h"
+          echo "npm_package_config_node_gyp_nodedir=$NODE_ROOT" >> "$GITHUB_ENV"
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm bootstrap:wterm
+      - run: pnpm test:plugins -- --shard=${{ matrix.shard }}/4
+
+  plugin-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Use installed Node headers
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          NODE_ROOT="$(node -p 'require("node:path").dirname(require("node:path").dirname(process.execPath))')"
+          test -f "$NODE_ROOT/include/node/node.h"
+          echo "npm_package_config_node_gyp_nodedir=$NODE_ROOT" >> "$GITHUB_ENV"
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm bootstrap:wterm
+      - run: pnpm check-types:plugins
+      - run: pnpm build:plugins:all

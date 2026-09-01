@@ -1,0 +1,1119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Step-by-step commissioning checklist for the Termco plugin release repository, signing key, GitHub Actions settings, and first release."
+    />
+    <title>Plugin release setup — commissioning checklist</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #f2f6f7;
+        --paper-deep: #e2eaec;
+        --panel: #fbfdfd;
+        --ink: #102f38;
+        --muted: #597078;
+        --line: #b9c9cd;
+        --line-strong: #7f979d;
+        --blue: #315efb;
+        --blue-deep: #173dbd;
+        --teal: #008b79;
+        --teal-deep: #006557;
+        --amber: #d9781f;
+        --red: #b33b4a;
+        --shadow: 0 22px 60px rgba(16, 47, 56, 0.12);
+        --display: "Avenir Next", Avenir, "Segoe UI Variable Display", "Segoe UI", sans-serif;
+        --body: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        color: var(--ink);
+        background:
+          linear-gradient(rgba(16, 47, 56, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(16, 47, 56, 0.04) 1px, transparent 1px),
+          var(--paper);
+        background-size: 32px 32px;
+        font-family: var(--body);
+        line-height: 1.55;
+      }
+
+      body::before {
+        position: fixed;
+        z-index: 100;
+        inset: 0 0 auto;
+        height: 5px;
+        content: "";
+        background: linear-gradient(90deg, var(--blue) 0 48%, var(--amber) 48% 52%, var(--teal) 52% 100%);
+      }
+
+      button,
+      input,
+      a {
+        font: inherit;
+      }
+
+      button:focus-visible,
+      input:focus-visible,
+      a:focus-visible {
+        outline: 3px solid var(--amber);
+        outline-offset: 3px;
+      }
+
+      a {
+        color: var(--blue-deep);
+        text-underline-offset: 0.18em;
+      }
+
+      code,
+      pre,
+      .utility,
+      .step-number,
+      .status-pill,
+      .progress-value {
+        font-family: var(--mono);
+      }
+
+      code {
+        border: 1px solid rgba(16, 47, 56, 0.14);
+        border-radius: 4px;
+        padding: 0.08rem 0.32rem;
+        background: rgba(255, 255, 255, 0.65);
+        font-size: 0.9em;
+      }
+
+      .shell {
+        width: min(1180px, calc(100% - 40px));
+        margin-inline: auto;
+      }
+
+      header {
+        padding: 42px 0 56px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(251, 253, 253, 0.82);
+      }
+
+      .masthead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 54px;
+      }
+
+      .wordmark {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        font-family: var(--display);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .mark {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border: 2px solid var(--ink);
+        border-radius: 50%;
+        color: white;
+        background: var(--ink);
+        font-family: var(--mono);
+        font-size: 0.78rem;
+      }
+
+      .status-pill {
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        padding: 7px 12px;
+        color: var(--muted);
+        background: white;
+        font-size: 0.72rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+        gap: 72px;
+        align-items: end;
+      }
+
+      .eyebrow,
+      .section-kicker {
+        margin: 0 0 12px;
+        color: var(--blue-deep);
+        font-family: var(--mono);
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        max-width: 780px;
+        margin-bottom: 24px;
+        font-family: var(--display);
+        font-size: clamp(3rem, 7.5vw, 6.8rem);
+        font-weight: 650;
+        letter-spacing: -0.068em;
+        line-height: 0.9;
+      }
+
+      h1 span {
+        color: var(--teal-deep);
+      }
+
+      .hero-copy {
+        max-width: 700px;
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: clamp(1.03rem, 1.6vw, 1.24rem);
+      }
+
+      .hero-card {
+        position: relative;
+        border: 1px solid var(--line-strong);
+        padding: 24px;
+        background: var(--ink);
+        color: white;
+        box-shadow: 12px 12px 0 var(--amber);
+      }
+
+      .hero-card::before {
+        display: block;
+        width: 44px;
+        height: 6px;
+        margin-bottom: 22px;
+        content: "";
+        background: var(--teal);
+      }
+
+      .hero-card strong {
+        display: block;
+        margin-bottom: 8px;
+        font-family: var(--display);
+        font-size: 1.25rem;
+      }
+
+      .hero-card p {
+        margin-bottom: 0;
+        color: #c8d7da;
+      }
+
+      .hero-card a {
+        color: white;
+      }
+
+      main {
+        padding: 56px 0 100px;
+      }
+
+      .truth-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin-bottom: 58px;
+      }
+
+      .truth-card {
+        border: 1px solid var(--line);
+        padding: 25px;
+        background: var(--panel);
+      }
+
+      .truth-card.yes {
+        border-top: 5px solid var(--teal);
+      }
+
+      .truth-card.no {
+        border-top: 5px solid var(--amber);
+      }
+
+      .truth-card h2 {
+        margin-bottom: 10px;
+        font-family: var(--display);
+        font-size: 1.45rem;
+        letter-spacing: -0.025em;
+      }
+
+      .truth-card p {
+        margin-bottom: 0;
+        color: var(--muted);
+      }
+
+      .commissioner {
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr);
+        gap: 28px;
+        align-items: start;
+      }
+
+      .control-panel {
+        position: sticky;
+        top: 28px;
+        border: 1px solid var(--line-strong);
+        background: var(--ink);
+        color: white;
+        box-shadow: var(--shadow);
+      }
+
+      .control-head {
+        padding: 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+      }
+
+      .control-head .section-kicker {
+        color: #7ed9cd;
+      }
+
+      .control-head h2 {
+        margin-bottom: 6px;
+        font-family: var(--display);
+        font-size: 1.45rem;
+      }
+
+      .control-head p {
+        margin-bottom: 0;
+        color: #b9cbcf;
+        font-size: 0.9rem;
+      }
+
+      .progress {
+        padding: 22px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+      }
+
+      .progress-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+
+      .progress-row span:first-child {
+        color: #b9cbcf;
+        font-size: 0.82rem;
+      }
+
+      .progress-value {
+        color: #7ed9cd;
+        font-size: 0.78rem;
+      }
+
+      .progress-track {
+        height: 8px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.13);
+      }
+
+      .progress-bar {
+        width: 0;
+        height: 100%;
+        background: linear-gradient(90deg, var(--blue), #7ed9cd);
+        transition: width 300ms ease;
+      }
+
+      .fields {
+        display: grid;
+        gap: 16px;
+        padding: 22px 24px;
+      }
+
+      label {
+        display: grid;
+        gap: 7px;
+        color: #c5d4d7;
+        font-size: 0.78rem;
+      }
+
+      input[type="text"] {
+        width: 100%;
+        border: 1px solid #789097;
+        border-radius: 0;
+        padding: 10px 11px;
+        color: white;
+        background: #183c46;
+        font-family: var(--mono);
+        font-size: 0.8rem;
+      }
+
+      .reset-button {
+        width: calc(100% - 48px);
+        margin: 0 24px 24px;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        padding: 9px 12px;
+        color: white;
+        background: transparent;
+        cursor: pointer;
+      }
+
+      .reset-button:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .steps {
+        position: relative;
+        display: grid;
+        gap: 18px;
+      }
+
+      .steps::before {
+        position: absolute;
+        z-index: 0;
+        top: 38px;
+        bottom: 38px;
+        left: 35px;
+        width: 3px;
+        content: "";
+        background: var(--line);
+      }
+
+      .step {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 70px minmax(0, 1fr);
+        border: 1px solid var(--line);
+        background: var(--panel);
+        box-shadow: 0 8px 24px rgba(16, 47, 56, 0.055);
+      }
+
+      .step.done {
+        border-color: rgba(0, 139, 121, 0.58);
+      }
+
+      .step-rail {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 25px;
+        background: var(--paper-deep);
+      }
+
+      .step-number {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border: 2px solid var(--line-strong);
+        border-radius: 50%;
+        color: var(--muted);
+        background: var(--panel);
+        font-size: 0.76rem;
+        transition: 180ms ease;
+      }
+
+      .step.done .step-number {
+        border-color: var(--teal);
+        color: white;
+        background: var(--teal);
+      }
+
+      .step-body {
+        min-width: 0;
+        padding: 25px 28px 28px;
+      }
+
+      .step-header {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 16px;
+      }
+
+      .step-header h3 {
+        margin-bottom: 5px;
+        font-family: var(--display);
+        font-size: clamp(1.35rem, 2.2vw, 1.8rem);
+        letter-spacing: -0.035em;
+      }
+
+      .step-header p {
+        margin-bottom: 0;
+        color: var(--muted);
+      }
+
+      .complete-label {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--line);
+        padding: 7px 9px;
+        color: var(--muted);
+        background: white;
+        cursor: pointer;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+      }
+
+      .complete-label input {
+        width: 17px;
+        height: 17px;
+        accent-color: var(--teal);
+      }
+
+      .step.done .complete-label {
+        border-color: var(--teal);
+        color: var(--teal-deep);
+      }
+
+      .action-list {
+        margin: 0;
+        padding-left: 1.25rem;
+      }
+
+      .action-list li + li {
+        margin-top: 8px;
+      }
+
+      .callout {
+        margin-top: 18px;
+        border-left: 5px solid var(--blue);
+        padding: 14px 16px;
+        background: #eaf0ff;
+      }
+
+      .callout.warning {
+        border-left-color: var(--amber);
+        background: #fff1df;
+      }
+
+      .callout.danger {
+        border-left-color: var(--red);
+        background: #fdecef;
+      }
+
+      .callout strong {
+        display: block;
+        margin-bottom: 3px;
+      }
+
+      .callout p {
+        margin-bottom: 0;
+      }
+
+      .code-card {
+        position: relative;
+        margin-top: 18px;
+        border: 1px solid #173a43;
+        background: #0d2931;
+        color: #dbe8ea;
+      }
+
+      .code-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+        padding: 8px 10px 8px 15px;
+        color: #9eb5ba;
+        font-family: var(--mono);
+        font-size: 0.73rem;
+      }
+
+      .copy-button {
+        border: 1px solid rgba(255, 255, 255, 0.26);
+        padding: 5px 9px;
+        color: white;
+        background: transparent;
+        cursor: pointer;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+      }
+
+      .copy-button:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      pre {
+        overflow-x: auto;
+        margin: 0;
+        padding: 18px 16px 20px;
+        font-size: 0.79rem;
+        line-height: 1.7;
+      }
+
+      .settings-grid,
+      .asset-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .setting,
+      .asset {
+        border: 1px solid var(--line);
+        padding: 14px;
+        background: white;
+      }
+
+      .setting small,
+      .asset small {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        text-transform: uppercase;
+      }
+
+      .setting strong,
+      .asset strong {
+        display: block;
+        overflow-wrap: anywhere;
+        font-family: var(--mono);
+        font-size: 0.82rem;
+      }
+
+      .setting.secret {
+        border-left: 5px solid var(--red);
+      }
+
+      .setting.variable {
+        border-left: 5px solid var(--blue);
+      }
+
+      .asset {
+        border-left: 5px solid var(--teal);
+      }
+
+      .final-state {
+        margin-top: 18px;
+        border: 2px solid var(--teal);
+        padding: 20px;
+        background: #e7f7f3;
+      }
+
+      .final-state strong {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--teal-deep);
+        font-family: var(--display);
+        font-size: 1.2rem;
+      }
+
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 32px 0 44px;
+        background: var(--panel);
+      }
+
+      .footer-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      @media (max-width: 900px) {
+        .hero,
+        .commissioner {
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          gap: 38px;
+        }
+
+        .control-panel {
+          position: static;
+        }
+
+        .fields {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 680px) {
+        .shell {
+          width: min(100% - 24px, 1180px);
+        }
+
+        header {
+          padding-top: 28px;
+        }
+
+        .masthead,
+        .step-header,
+        .footer-row {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .truth-grid,
+        .settings-grid,
+        .asset-grid,
+        .fields {
+          grid-template-columns: 1fr;
+        }
+
+        .step {
+          grid-template-columns: 48px minmax(0, 1fr);
+        }
+
+        .steps::before {
+          left: 24px;
+        }
+
+        .step-number {
+          width: 28px;
+          height: 28px;
+          font-size: 0.67rem;
+        }
+
+        .step-body {
+          padding: 20px 18px 24px;
+        }
+
+        h1 {
+          font-size: clamp(3rem, 18vw, 5rem);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="shell">
+        <div class="masthead">
+          <div class="wordmark"><span class="mark">PR</span> Termco release commissioning</div>
+          <span class="status-pill">Live · signed snapshots publishing</span>
+        </div>
+
+        <div class="hero">
+          <div>
+            <p class="eyebrow">Operator guide / GitHub setup</p>
+            <h1>From local code<br /><span>to the first plugin release.</span></h1>
+            <p class="hero-copy">
+              This is the exact infrastructure checklist. Complete it once, publish one bootstrap
+              application update, and later plugin changes can ship independently without replacing Electron.
+            </p>
+          </div>
+          <aside class="hero-card">
+            <strong>The separate release feed now exists.</strong>
+            <p>
+              <a href="https://github.com/termco-ai/termco-plugin-releases">termco-ai/termco-plugin-releases</a>
+              is the canonical official-plugin source repository and public artifact feed. The
+              Electron host remains in <code>termco-ai/termco</code>.
+            </p>
+          </aside>
+        </div>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="truth-grid" aria-label="Current implementation status">
+        <article class="truth-card yes">
+          <p class="section-kicker">Already created</p>
+          <h2>GitHub Actions publisher</h2>
+          <p>
+            Repository B's <code>.github/workflows/release.yml</code> validates plugin source,
+            builds a complete signed snapshot, and publishes both assets in that same repository.
+          </p>
+        </article>
+        <article class="truth-card no">
+          <p class="section-kicker">Not created</p>
+          <h2>No GitLab pipeline</h2>
+          <p>
+            There is no <code>.gitlab-ci.yml</code>. The current automation targets GitHub because the
+            planned application and release feed are GitHub repositories.
+          </p>
+        </article>
+      </section>
+
+      <section class="commissioner" aria-label="Release setup checklist">
+        <aside class="control-panel">
+          <div class="control-head">
+            <p class="section-kicker">Commissioning card</p>
+            <h2>Your values</h2>
+            <p>These values stay in this browser. Never enter the private key or token here.</p>
+          </div>
+          <div class="progress">
+            <div class="progress-row">
+              <span>Checklist progress</span>
+              <span class="progress-value" id="progress-value">0 / 8</span>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div class="progress-bar" id="progress-bar"></div>
+            </div>
+          </div>
+          <div class="fields">
+            <label>
+              Main source repository
+              <input id="source-repository" type="text" value="termco-ai/termco" autocomplete="off" />
+            </label>
+            <label>
+              Plugin feed repository
+              <input id="feed-repository" type="text" value="termco-ai/termco-plugin-releases" autocomplete="off" />
+            </label>
+            <label>
+              Signing key id
+              <input id="key-id" type="text" value="production-2026-08" autocomplete="off" />
+            </label>
+          </div>
+          <button class="reset-button" id="reset-progress" type="button">Reset checklist</button>
+        </aside>
+
+        <div class="steps">
+          <article class="step" data-step="1">
+            <div class="step-rail"><span class="step-number">01</span></div>
+            <div class="step-body">
+              <div class="step-header">
+                <div>
+                  <p class="section-kicker">Repository B</p>
+                  <h3>Confirm the plugin release repository</h3>
+                  <p>This repository owns official plugin source and its release artifacts, not Electron.</p>
+                </div>
+                <label class="complete-label"><input type="checkbox" /> Done</label>
+              </div>
+              <ol class="action-list">
+                <li>Use the existing public repository <strong data-feed-repository>termco-ai/termco-plugin-releases</strong>.</li>
+                <li>Make it public unless plugin distribution must be private.</li>
+                <li>Keep ordinary official plugins under <code>plugins/</code> and the selected set in <code>profiles/default/profile.json</code>.</li>
+                <li>Keep protected core plugins and application contracts pinned by the Termco host release.</li>
+                <li>Use GitHub Releases in the same repository for the signed manifest and complete ZIP snapshot.</li>
+              </ol>
+              <div class="callout warning">
+                <strong>Public is the simpler production choice.</strong>
+                <p>A private feed would require every installed application to authenticate. Do not embed a personal token in the application.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="step" data-step="2">
+            <div class="step-rail"><span class="step-number">02</span></div>
+            <div class="step-body">
+              <div class="step-header">
+                <div>
+                  <p class="section-kicker">Trust root</p>
+                  <h3>Generate the Ed25519 signing key</h3>
+                  <p>Generate it locally. The private half signs releases; the application contains only the public half.</p>
+                </div>
+                <label class="complete-label"><input type="checkbox" /> Done</label>
+              </div>
+              <div class="code-card">
+                <div class="code-title"><span>Terminal · run outside the repository if preferred</span><button class="copy-button" type="button">Copy</button></div>
+                <pre>openssl genpkey -algorithm ED25519 -out plugin-release-private.pem
+chmod 600 plugin-release-private.pem
+openssl pkey -in plugin-release-private.pem -pubout -out plugin-release-public.pem</pre>
+              </div>
+              <div class="callout danger">
+                <strong>Never commit <code>plugin-release-private.pem</code>.</strong>
+                <p>The repository already ignores <code>*.pem</code>, but the durable copy should live in a password manager or dedicated secret store.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="step" data-step="3">
+            <div class="step-rail"><span class="step-number">03</span></div>
+            <div class="step-body">
+              <div class="step-header">
+                <div>
+                  <p class="section-kicker">Repository A</p>
+                  <h3>Enable the feed in the packaged application</h3>
+                  <p>Edit <code>plugin-release.json</code> in the main source repository.</p>
+                </div>
+                <label class="complete-label"><input type="checkbox" /> Done</label>
+              </div>
+              <div class="code-card">
+                <div class="code-title"><span>plugin-release.json · replace the entire quoted PEM placeholder</span><button class="copy-button" type="button">Copy</button></div>
+                <pre id="config-preview"></pre>
+              </div>
+              <div class="code-card">
+                <div class="code-title"><span>Convert the public PEM to a JSON-safe string</span><button class="copy-button" type="button">Copy</button></div>
+                <pre>node -e 'const fs=require("fs"); console.log(JSON.stringify(fs.readFileSync("plugin-release-public.pem","utf8")))'</pre>
+              </div>
+              <div class="callout">
+                <strong>The public key is safe to commit.</strong>
+                <p>The private key is not. The key id in this file must exactly match <code data-key-id>production-2026-08</code>.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="step" data-step="4">
+            <div class="step-rail"><span class="step-number">04</span></div>
+            <div class="step-body">
+              <div class="step-header">
+                <div>
+                  <p class="section-kicker">Repository permissions</p>
+                  <h3>Use the repository-scoped GitHub token</h3>
+                  <p>The publisher runs in Repository B and creates releases in Repository B.</p>
+                </div>
+                <label class="complete-label"><input type="checkbox" /> Done</label>
+              </div>
+              <ol class="action-list">
+                <li>Open <strong>Settings → Actions → General</strong> in <strong data-feed-repository>termco-ai/termco-plugin-releases</strong>.</li>
+                <li>Allow workflows to run and keep the workflow's explicit <strong>contents: write</strong> permission.</li>
+                <li>Do not create a personal access token for normal publishing.</li>
+                <li>Keep branch protection focused on review and green validation before <code>main</code>.</li>
+              </ol>
+              <div class="callout warning">
+                <strong>The repository-scoped <code>GITHUB_TOKEN</code> is sufficient.</strong>
+                <p>No cross-repository write occurs, so the application repository does not need a plugin publishing token.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="step" data-step="5">
+            <div class="step-rail"><span class="step-number">05</span></div>
+            <div class="step-body">
+              <div class="step-header">
+                <div>
+                  <p class="section-kicker">Actions settings</p>
+                  <h3>Add one variable and one secret</h3>
+                  <p>Add them to <strong data-feed-repository>termco-ai/termco-plugin-releases</strong>, because that is where the workflow runs.</p>
+                </div>
+                <label class="complete-label"><input type="checkbox" /> Done</label>
+              </div>
+              <p>Open <strong>Settings → Secrets and variables → Actions</strong> in the plugin repository.</p>
+              <div class="settings-grid">
+                <div class="setting variable"><small>Repository variable</small><strong>PLUGIN_RELEASE_KEY_ID</strong><span data-key-id>production-2026-08</span></div>
+                <div class="setting secret"><small>Repository secret</small><strong>PLUGIN_RELEASE_PRIVATE_KEY</strong><span>Entire private PEM, including header and footer</span></div>
+              </div>
+              <div class="callout">
+                <strong>The Termco host repository needs no private plugin key.</strong>
+                <p>Only the public key is packaged in the application through <code>plugin-release.json</code>.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="step" data-step="6">
+            <div class="step-rail"><span class="step-number">06</span></div>
+            <div class="step-body">
+              <div class="step-header">
+                <div>
+                  <p class="section-kicker">One-time bootstrap</p>
+                  <h3>Ship one full application update</h3>
+                  <p>Existing installations cannot trust the new feed until they receive its repository and public key.</p>
+                </div>
+                <label class="complete-label"><input type="checkbox" /> Done</label>
+              </div>
+              <ol class="action-list">
+                <li>Commit the enabled <code>plugin-release.json</code> and first-launch bootstrap to the main source repository.</li>
+                <li>Build, sign, and publish the application using the existing Electron release process.</li>
+                <li>Install that application version on a clean machine or clean user profile.</li>
+                <li>Confirm the setup screen downloads, verifies, compiles, and activates the official plugin set.</li>
+              </ol>
+              <div class="callout warning">
+                <strong>This bootstrap cannot be a plugin-only release.</strong>
+                <p>The public key and release manager are part of the trusted application baseline, so enabling them requires one normal application update.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="step" data-step="7">
+            <div class="step-rail"><span class="step-number">07</span></div>
+            <div class="step-body">
+              <div class="step-header">
+                <div>
+                  <p class="section-kicker">Normal release</p>
+                  <h3>Publish the first plugin-only update</h3>
+                  <p>After bootstrap, ordinary compatible plugin changes publish automatically from <code>main</code>.</p>
+                </div>
+                <label class="complete-label"><input type="checkbox" /> Done</label>
+              </div>
+              <ol class="action-list">
+                <li>Change an eligible plugin under <code>plugins/&lt;plugin-id&gt;/</code> in <strong data-feed-repository>termco-ai/termco-plugin-releases</strong>.</li>
+                <li>Increase its stable <code>major.minor.patch</code> version in <code>termco-plugin.json</code>.</li>
+                <li>Merge or push the green change to <code>main</code> in the plugin repository.</li>
+                <li>Watch the <strong>Signed plugin release</strong> GitHub Actions workflow.</li>
+              </ol>
+              <div class="asset-grid">
+                <div class="asset"><small>Release asset 1</small><strong>termco-plugin-release.json</strong></div>
+                <div class="asset"><small>Release asset 2</small><strong>plugins-&lt;release-id&gt;.zip</strong></div>
+              </div>
+              <div class="callout">
+                <strong>The repository boundary is the safety classification.</strong>
+                <p>Protected plugins, base contracts, native dependencies, and Electron code remain in the host release lane.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="step" data-step="8">
+            <div class="step-rail"><span class="step-number">08</span></div>
+            <div class="step-body">
+              <div class="step-header">
+                <div>
+                  <p class="section-kicker">Acceptance</p>
+                  <h3>Verify the complete user path</h3>
+                  <p>Test the feed once before treating it as production infrastructure.</p>
+                </div>
+                <label class="complete-label"><input type="checkbox" /> Done</label>
+              </div>
+              <ol class="action-list">
+                <li>Open the latest release in <strong data-feed-repository>termco-ai/termco-plugin-releases</strong> and confirm both assets exist.</li>
+                <li>Launch a packaged application with empty user data and confirm the setup screen appears.</li>
+                <li>Confirm all 100 official plugins are installed only after signature, digest, and compatibility checks pass.</li>
+                <li>Restart once and verify setup is skipped and the same generation persists.</li>
+                <li>Confirm exactly one automatic application/plugin update check runs on that restart.</li>
+              </ol>
+              <div class="final-state">
+                <strong>Commissioning complete</strong>
+                Normal application releases continue through <code>electron-updater</code>. Eligible plugin releases now travel through the separate signed feed.
+              </div>
+              <div class="callout warning">
+                <strong>Operational follow-up: document key rotation and revocation.</strong>
+                <p>Add a new public key through an application release before signing with it. Keep the previous private key offline until every supported application trusts the replacement.</p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="shell footer-row">
+        <span>Termco plugin release setup · checklist data stays in local browser storage</span>
+        <span><a href="plugin-update-overview.html">Architecture overview</a> · <a href="https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets?tool=webui">GitHub Actions secrets</a> · <a href="https://docs.github.com/en/rest/releases/releases">Release token permissions</a></span>
+      </div>
+    </footer>
+
+    <script>
+      const storageKey = "termco-plugin-release-commissioning-v3";
+      const defaults = {
+        sourceRepository: "termco-ai/termco",
+        feedRepository: "termco-ai/termco-plugin-releases",
+        keyId: "production-2026-08",
+        completed: [],
+      };
+
+      const stored = (() => {
+        try {
+          return { ...defaults, ...JSON.parse(localStorage.getItem(storageKey) || "{}") };
+        } catch {
+          return { ...defaults };
+        }
+      })();
+
+      const sourceInput = document.querySelector("#source-repository");
+      const feedInput = document.querySelector("#feed-repository");
+      const keyInput = document.querySelector("#key-id");
+      const steps = [...document.querySelectorAll(".step")];
+
+      sourceInput.value = stored.sourceRepository;
+      feedInput.value = stored.feedRepository;
+      keyInput.value = stored.keyId;
+
+      const persist = () => {
+        localStorage.setItem(storageKey, JSON.stringify({
+          sourceRepository: sourceInput.value.trim() || defaults.sourceRepository,
+          feedRepository: feedInput.value.trim() || defaults.feedRepository,
+          keyId: keyInput.value.trim() || defaults.keyId,
+          completed: steps
+            .filter((step) => step.querySelector('input[type="checkbox"]').checked)
+            .map((step) => step.dataset.step),
+        }));
+      };
+
+      const updateValues = () => {
+        const source = sourceInput.value.trim() || defaults.sourceRepository;
+        const feed = feedInput.value.trim() || defaults.feedRepository;
+        const keyId = keyInput.value.trim() || defaults.keyId;
+        document.querySelectorAll("[data-source-repository]").forEach((element) => {
+          element.textContent = source;
+        });
+        document.querySelectorAll("[data-feed-repository]").forEach((element) => {
+          element.textContent = feed;
+        });
+        document.querySelectorAll("[data-key-id]").forEach((element) => {
+          element.textContent = keyId;
+        });
+        document.querySelector("#config-preview").textContent = JSON.stringify({
+          schemaVersion: 1,
+          enabled: true,
+          repository: feed,
+          publicKeys: {
+            [keyId]: "PASTE_PUBLIC_PEM_CONTENTS_HERE",
+          },
+        }, null, 2);
+        persist();
+      };
+
+      const updateProgress = () => {
+        const complete = steps.filter((step) => step.querySelector('input[type="checkbox"]').checked).length;
+        steps.forEach((step) => {
+          step.classList.toggle("done", step.querySelector('input[type="checkbox"]').checked);
+        });
+        document.querySelector("#progress-value").textContent = `${complete} / ${steps.length}`;
+        document.querySelector("#progress-bar").style.width = `${(complete / steps.length) * 100}%`;
+        persist();
+      };
+
+      steps.forEach((step) => {
+        const checkbox = step.querySelector('input[type="checkbox"]');
+        checkbox.checked = stored.completed.includes(step.dataset.step);
+        checkbox.addEventListener("change", updateProgress);
+      });
+
+      [sourceInput, feedInput, keyInput].forEach((input) => {
+        input.addEventListener("input", updateValues);
+      });
+
+      document.querySelectorAll(".copy-button").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const text = button.closest(".code-card").querySelector("pre").textContent;
+          try {
+            await navigator.clipboard.writeText(text);
+            button.textContent = "Copied";
+            setTimeout(() => { button.textContent = "Copy"; }, 1400);
+          } catch {
+            button.textContent = "Select manually";
+          }
+        });
+      });
+
+      document.querySelector("#reset-progress").addEventListener("click", () => {
+        steps.forEach((step) => {
+          step.querySelector('input[type="checkbox"]').checked = false;
+        });
+        updateProgress();
+      });
+
+      updateValues();
+      updateProgress();
+    </script>
+  </body>
+</html>

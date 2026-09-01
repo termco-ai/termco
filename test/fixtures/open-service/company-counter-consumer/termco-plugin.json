@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 3,
+  "id": "company.counter-consumer",
+  "name": "Company Counter Consumer",
+  "description": "Injects and uses the company.counter contract without depending on its provider.",
+  "category": "Company examples",
+  "version": "1.0.0",
+  "entrypoints": { "utility": "src/main.ts" },
+  "dependencies": {
+    "@company/counter-base": "1.0.0"
+  },
+  "activation": "eager"
+}

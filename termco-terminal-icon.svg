@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Termco terminal icon</title>
+  <desc id="desc">A white modular terminal prompt and cursor on a near-black rounded-square background.</desc>
+
+  <rect width="1024" height="1024" rx="184" fill="#090909"/>
+
+  <g fill="#FAFAFA">
+    <path d="M292 200H440C454 200 466 206 475 217L677 469C686 480 686 492 678 501C672 508 664 512 654 512H495C480 512 466 505 457 494L263 253C254 242 254 228 261 217C268 206 279 200 292 200Z"/>
+    <path d="M490 526H654C666 526 676 532 682 542C688 552 687 563 680 572L475 824C466 835 453 840 440 840H293C279 840 268 834 261 823C254 811 255 797 264 786L459 543C467 532 478 526 490 526Z"/>
+    <rect x="632" y="711" width="198" height="112" rx="26"/>
+  </g>
+</svg>

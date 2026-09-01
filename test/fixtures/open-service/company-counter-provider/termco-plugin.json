@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 3,
+  "id": "company.counter-provider",
+  "name": "Company Counter Provider",
+  "description": "Provides a company-owned counter with no host catalogue entry.",
+  "category": "Company examples",
+  "version": "1.0.0",
+  "entrypoints": { "utility": "src/main.ts" },
+  "dependencies": {
+    "@company/counter-base": "1.0.0"
+  },
+  "activation": "eager"
+}
