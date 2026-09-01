@@ -33,6 +33,33 @@ Public service contracts come from their owning `*-base` package. Import
 primitives from `@termco/ui`. Import another plugin's contract package, never
 its source files.
 
+### Floating UI above native browser surfaces
+
+Renderer plugins that use the shared `@termco/ui` dialog, alert-dialog, sheet,
+popover, menu, select, hover-card, or toast primitives automatically render
+above a live native browser surface. No browser snapshot or replacement image
+is involved.
+
+For a custom portal, coach mark, drag ghost, or other floating surface, mark
+the mounted root with `data-termco-overlay="true"` or use the exported
+`useOverlayGuard` hook. Prefer a ref for bounded floating UI so Termco only
+raises the renderer when that surface intersects the browser:
+
+```tsx
+import { useOverlayGuard } from "@termco/ui";
+import { useRef } from "react";
+
+export function CompanyPopup() {
+  const popupRef = useRef<HTMLDivElement>(null);
+  useOverlayGuard(popupRef);
+  return <div ref={popupRef}>Company popup</div>;
+}
+```
+
+Call `useOverlayGuard()` without a ref only for a full-window overlay. Custom
+floating UI that uses neither the shared primitives nor this opt-in contract
+cannot be detected by the host and may remain behind a native browser view.
+
 ## Create, fork, and replace are different operations
 
 Every authoring mutation starts with `plugin_plan`. The plan is a pure preflight

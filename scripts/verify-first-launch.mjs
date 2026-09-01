@@ -56,8 +56,27 @@ async function launch(extra = {}) {
 }
 
 async function close(run) {
-  await run.application.close();
-  applications.delete(run.application);
+  let timeout;
+  try {
+    const closed = new Promise((resolve) => {
+      run.application.once("close", resolve);
+    });
+    await run.application.evaluate(({ app }) => {
+      setImmediate(() => app.quit());
+    });
+    await Promise.race([
+      closed,
+      new Promise((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error("packaged application did not quit within 15 seconds")),
+          15_000,
+        );
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+    applications.delete(run.application);
+  }
 }
 
 async function directories(path) {

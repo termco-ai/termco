@@ -1,6 +1,6 @@
 import type { App } from "electron";
 
-type LifecycleApp = Pick<App, "on">;
+type LifecycleApp = Pick<App, "on" | "exit">;
 
 export type MainLifecycleDependencies = {
   setAppQuitting: () => void;
@@ -20,16 +20,27 @@ export function registerMainLifecycle(
   dependencies: MainLifecycleDependencies,
 ): void {
   let disposed = false;
+  let disposing = false;
 
   app.on("before-quit", () => {
     dependencies.setAppQuitting();
   });
 
-  app.on("will-quit", () => {
+  app.on("will-quit", (event) => {
     if (disposed) return;
-    disposed = true;
-    void Promise.resolve(dependencies.disposePluginRuntime()).catch((error) => {
-      dependencies.reportError?.(error);
-    });
+    // Electron does not await async will-quit listeners. Keep the main process
+    // alive until plugin effects (notably live PTYs) have been disposed, then
+    // use app.exit() to finish without re-entering the quit event sequence.
+    event.preventDefault();
+    if (disposing) return;
+    disposing = true;
+    void Promise.resolve(dependencies.disposePluginRuntime())
+      .catch((error) => {
+        dependencies.reportError?.(error);
+      })
+      .finally(() => {
+        disposed = true;
+        app.exit(0);
+      });
   });
 }

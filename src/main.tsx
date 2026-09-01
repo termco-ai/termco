@@ -15,6 +15,10 @@ import {
   subscribeRendererProfile,
 } from "./platform/rendererRuntime";
 
+if (new URLSearchParams(window.location.search).get("liveBrowserLayer") === "1") {
+  document.documentElement.dataset.liveBrowserLayer = "true";
+}
+
 if (USE_CUSTOM_WINDOW_CONTROLS) {
   document.documentElement.dataset.chrome = "borderless";
 }

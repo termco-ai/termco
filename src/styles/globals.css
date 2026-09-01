@@ -28,6 +28,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Let the live browser sibling show through the exact preview rectangle. The
+   Termco renderer remains a transparent native sibling that can be raised when
+   a DOM overlay needs to paint above the browser. */
+html[data-live-browser-layer="true"],
+html[data-live-browser-layer="true"] body,
+html[data-live-browser-layer="true"] #root,
+html[data-live-browser-layer="true"] #root *:has([data-live-browser-hole="true"]) {
+    background: transparent !important;
+}
+
 @theme inline {
     --font-heading: 'Geist Variable', system-ui, sans-serif;
     --font-sans: 'Geist Variable', system-ui, sans-serif;

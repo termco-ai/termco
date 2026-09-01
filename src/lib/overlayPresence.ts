@@ -1,7 +1,6 @@
 /**
- * Detects whether a floating overlay is currently open, so the embedded
- * browser (a native WebContentsView that always paints above the DOM) can be
- * hidden while one is up.
+ * Detects whether a floating overlay is currently open, so the Termco renderer
+ * can be raised above the sibling native browser view while it is needed.
  *
  * Two sources, OR'd together:
  *  - DOM observation for Radix overlays. Radix Content components mount into
@@ -17,38 +16,53 @@ import { type RefObject, useEffect, useSyncExternalStore } from "react";
 
 // Non-Radix floating surfaces come in two flavours: those that expose a DOM
 // element (via a ref) so we can tell whether they actually cover a native view,
-// and those that don't (`manualCount`) and must hide it conservatively.
+// and those that don't (`manualCount`) and must raise the renderer conservatively.
 let manualCount = 0;
 const manualRefs = new Set<RefObject<HTMLElement | null>>();
 let version = 0;
 const listeners = new Set<() => void>();
 
-// Open Radix surfaces: popper-based menus/popovers/selects/hovercards wrap
-// their content in [data-radix-popper-content-wrapper] only while open;
-// dialogs/alert-dialogs/sheets carry data-state="open" on open content.
+// Open floating surfaces. Radix poppers mount a wrapper only while open;
+// dialogs and Termco's shared floating class remain detectable even when they
+// do not use Radix. Bespoke overlays opt in with data-termco-overlay.
 const OPEN_SELECTOR = [
   "[data-radix-popper-content-wrapper]",
-  '[role="dialog"][data-state="open"]',
-  '[role="alertdialog"][data-state="open"]',
+  '[data-termco-overlay="true"]',
+  "[data-sonner-toast]",
+  ".termco-floating:not([data-state=\"closed\"])",
+  '[role="dialog"]:not([data-state="closed"])',
+  '[role="alertdialog"]:not([data-state="closed"])',
   '[data-slot="sheet-content"][data-state="open"]',
 ].join(",");
 
 let domOpen = false;
+let domGeometry = "";
 let observer: MutationObserver | null = null;
 
-function computeDomOpen(): boolean {
-  return (
-    typeof document !== "undefined" &&
-    document.querySelector(OPEN_SELECTOR) !== null
-  );
+function readDomOverlayState(): { open: boolean; geometry: string } {
+  if (typeof document === "undefined") return { open: false, geometry: "" };
+  const overlays = Array.from(document.querySelectorAll(OPEN_SELECTOR));
+  return {
+    open: overlays.length > 0,
+    // Popper mounts its wrapper before calculating its final position. Include
+    // geometry so that positioning an already-open overlay invalidates browser
+    // overlap checks as well as opening/closing one.
+    geometry: overlays
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        return `${rect.left}:${rect.top}:${rect.width}:${rect.height}`;
+      })
+      .join("|"),
+  };
 }
 
 function ensureObserver(): void {
   if (observer || typeof document === "undefined" || !document.body) return;
   observer = new MutationObserver(() => {
-    const next = computeDomOpen();
-    if (next !== domOpen) {
-      domOpen = next;
+    const next = readDomOverlayState();
+    if (next.open !== domOpen || next.geometry !== domGeometry) {
+      domOpen = next.open;
+      domGeometry = next.geometry;
       notify();
     }
   });
@@ -56,9 +70,19 @@ function ensureObserver(): void {
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ["data-state"],
+    attributeFilter: [
+      "class",
+      "data-slot",
+      "data-sonner-toast",
+      "data-state",
+      "data-termco-overlay",
+      "role",
+      "style",
+    ],
   });
-  domOpen = computeDomOpen();
+  const initial = readDomOverlayState();
+  domOpen = initial.open;
+  domGeometry = initial.geometry;
 }
 
 function notify(): void {
@@ -73,7 +97,7 @@ function overlaysVersion(): number {
 }
 
 /** True only when a non-queryable manual overlay (tab HUD, selection popup) is
- * up — those have no rect, so a native view must hide conservatively. Manual
+ * up — those have no rect, so the renderer must be raised conservatively. Manual
  * overlays that registered a ref are reported via `openOverlayRects` instead. */
 export function manualOverlayOpen(): boolean {
   return manualCount > 0;
@@ -81,9 +105,8 @@ export function manualOverlayOpen(): boolean {
 
 /** On-screen rects of everything currently open that can occlude a native
  * view: Radix popper wrappers / open dialogs & sheets, plus ref-registered
- * manual surfaces (e.g. the draggable mini window). Lets a native view decide
- * whether an overlay actually covers it, instead of hiding for any overlay
- * anywhere in the window. */
+ * manual surfaces (e.g. the draggable mini window). Lets the browser surface
+ * raise the renderer only when an overlay actually intersects it. */
 export function openOverlayRects(): DOMRect[] {
   if (typeof document === "undefined") return [];
   const rects = Array.from(document.querySelectorAll(OPEN_SELECTOR), (el) =>
@@ -133,10 +156,9 @@ export function subscribeOverlays(cb: () => void): () => void {
  * while shown (mounted ⇔ open). Radix overlays do NOT need this — they're
  * detected via the DOM observer.
  *
- * Pass the surface's element ref to make it rect-aware: a native view then
- * hides only when the surface actually overlaps it (e.g. the mini window is
- * dragged over the browser). Without a ref, the surface hides native views
- * conservatively whenever it's up.
+ * Pass the surface's element ref to make it rect-aware: the Termco renderer is
+ * raised only when the surface overlaps the browser (e.g. the mini window is
+ * dragged over it). Without a ref, it is raised conservatively while open.
  */
 export function useOverlayGuard(ref?: RefObject<HTMLElement | null>): void {
   useEffect(() => {

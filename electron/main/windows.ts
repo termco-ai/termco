@@ -3,12 +3,19 @@
  * webContents→label registry, event forwarding to the renderer, and the
  * app-global event broadcast used by the emit/listen bus.
  */
-import { BrowserWindow, type WebContents } from "electron";
+import { BrowserWindow, WebContentsView, type WebContents } from "electron";
 import { join } from "node:path";
 import { savedBounds, trackWindow } from "./windowState";
 
 const IS_MAC = process.platform === "darwin";
 const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
+// Native browser pages and the Termco UI must be sibling WebContentsViews so
+// either one can be raised above the other. Keep the old BrowserWindow-hosted
+// renderer only for the existing Playwright harness, which attaches directly
+// to BrowserWindow.webContents.
+const USE_LAYERED_RENDERER =
+  process.env.TERMCO_E2E !== "1" &&
+  process.env.TERMCO_DISABLE_LAYERED_RENDERER !== "1";
 
 // Resolve paths relative to the built main bundle (dist-electron/main/index.cjs).
 // __dirname is a genuine CommonJS global in the esbuild cjs output.
@@ -17,6 +24,12 @@ const RENDERER_DIST = join(__dirname, "../../dist");
 
 const windowsByLabel = new Map<string, BrowserWindow>();
 const labelByWebContentsId = new Map<number, string>();
+const rendererByLabel = new Map<string, WebContents>();
+
+function rendererForWindow(win: BrowserWindow): WebContents {
+  const label = [...windowsByLabel].find(([, candidate]) => candidate === win)?.[0];
+  return (label && rendererByLabel.get(label)) ?? win.webContents;
+}
 
 export function labelForSender(sender: WebContents): string {
   return labelByWebContentsId.get(sender.id) ?? "main";
@@ -24,6 +37,11 @@ export function labelForSender(sender: WebContents): string {
 
 export function windowByLabel(label: string): BrowserWindow | undefined {
   return windowsByLabel.get(label);
+}
+
+export function windowForSender(sender: WebContents): BrowserWindow | undefined {
+  const label = labelByWebContentsId.get(sender.id);
+  return label ? windowsByLabel.get(label) : undefined;
 }
 
 export function allWindows(): BrowserWindow[] {
@@ -37,9 +55,10 @@ export function broadcastEvent(event: string, payload: unknown): void {
     // registry — sending then throws "Object has been destroyed", and an
     // uncaught throw inside a close handler pops Electron's modal error dialog
     // (which permanently blocks quit in headless/E2E runs).
-    if (win.webContents.isDestroyed()) continue;
+    const renderer = rendererForWindow(win);
+    if (renderer.isDestroyed()) continue;
     try {
-      win.webContents.send("termco:event", { event, payload });
+      renderer.send("termco:event", { event, payload });
     } catch {
       // window died between the check and the send — skip it
     }
@@ -54,7 +73,7 @@ export function emitToWindow(
 ): void {
   const win = windowsByLabel.get(label);
   if (win && !win.isDestroyed()) {
-    win.webContents.send("termco:event", { event, payload });
+    rendererForWindow(win).send("termco:event", { event, payload });
   }
 }
 
@@ -65,7 +84,7 @@ export function sendWindowEvent(
   payload: unknown,
 ): void {
   if (!win.isDestroyed()) {
-    win.webContents.send("termco:window-event", { name, payload });
+    rendererForWindow(win).send("termco:window-event", { name, payload });
   }
 }
 
@@ -138,8 +157,29 @@ export function createWindow(options: CreateOptions): BrowserWindow {
     },
   });
 
+  let renderer = win.webContents;
+  let rendererView: WebContentsView | null = null;
+  if (USE_LAYERED_RENDERER) {
+    rendererView = new WebContentsView({
+      webPreferences: {
+        preload: PRELOAD,
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: false,
+        spellcheck: false,
+        backgroundThrottling: !IS_E2E,
+      },
+    });
+    rendererView.setBackgroundColor("#00000000");
+    const [width, height] = win.getContentSize();
+    rendererView.setBounds({ x: 0, y: 0, width, height });
+    win.contentView.addChildView(rendererView);
+    renderer = rendererView.webContents;
+  }
+
   windowsByLabel.set(options.label, win);
-  labelByWebContentsId.set(win.webContents.id, options.label);
+  rendererByLabel.set(options.label, renderer);
+  labelByWebContentsId.set(renderer.id, options.label);
   trackWindow(win, options.label);
 
   // Do not make window visibility depend solely on renderer IPC. A plugin
@@ -148,15 +188,20 @@ export function createWindow(options: CreateOptions): BrowserWindow {
   // hung. The renderer still asks to show after its first paint; this native
   // fallback guarantees that startup and actionable renderer errors are
   // visible even when that request never arrives.
-  win.once("ready-to-show", () => {
+  const showWhenReady = () => {
     if (IS_E2E || win.isDestroyed()) return;
     win.show();
     win.focus();
-  });
+  };
+  if (rendererView) renderer.once("did-finish-load", showWhenReady);
+  else win.once("ready-to-show", showWhenReady);
 
   win.on("closed", () => {
     windowsByLabel.delete(options.label);
+    rendererByLabel.delete(options.label);
+    labelByWebContentsId.delete(renderer.id);
     forceClosing.delete(options.label);
+    if (rendererView && !renderer.isDestroyed()) renderer.close();
   });
 
   // Unsaved-work guard: defer real close, ask the renderer, let it force-close.
@@ -169,13 +214,19 @@ export function createWindow(options: CreateOptions): BrowserWindow {
 
   win.on("focus", () => sendWindowEvent(win, "focus-changed", true));
   win.on("blur", () => sendWindowEvent(win, "focus-changed", false));
-  win.on("resize", () => sendWindowEvent(win, "resized", null));
+  win.on("resize", () => {
+    if (rendererView) {
+      const [width, height] = win.getContentSize();
+      rendererView.setBounds({ x: 0, y: 0, width, height });
+    }
+    sendWindowEvent(win, "resized", null);
+  });
 
-  const query = `?window=${options.label}`;
+  const query = `?window=${options.label}${USE_LAYERED_RENDERER ? "&liveBrowserLayer=1" : ""}`;
   if (DEV_SERVER_URL) {
-    void win.loadURL(`${DEV_SERVER_URL}/${options.entry}.html${query}`);
+    void renderer.loadURL(`${DEV_SERVER_URL}/${options.entry}.html${query}`);
   } else {
-    void win.loadFile(join(RENDERER_DIST, `${options.entry}.html`), {
+    void renderer.loadFile(join(RENDERER_DIST, `${options.entry}.html`), {
       search: query,
     });
   }

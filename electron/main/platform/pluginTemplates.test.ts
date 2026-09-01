@@ -41,6 +41,11 @@ describe("generated plugin scaffolds", () => {
         category: "Generated test",
         target,
       });
+      if (target === "ui.overlays") {
+        expect(scaffold.files.get("src/renderer.ts")).toContain(
+          '"data-termco-overlay": "true"',
+        );
+      }
       await mkdir(pluginRoot, { recursive: true });
       await writeFile(
         join(pluginRoot, "termco-plugin.json"),

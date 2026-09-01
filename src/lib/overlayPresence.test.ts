@@ -66,6 +66,32 @@ describe("DOM observation (Radix overlays)", () => {
     unsub();
   });
 
+  it("notifies again when an already-open popper is positioned", async () => {
+    const lefts: number[] = [];
+    const unsub = subscribeOverlays(() => {
+      const rect = openOverlayRects()[0];
+      if (rect) lefts.push(rect.left);
+    });
+    let left = 0;
+    const wrapper = document.createElement("div");
+    wrapper.setAttribute("data-radix-popper-content-wrapper", "");
+    wrapper.getBoundingClientRect = () =>
+      ({ left, x: left, top: 40, y: 40, right: left + 320, bottom: 340, width: 320, height: 300, toJSON: () => ({}) }) as DOMRect;
+
+    // Radix first mounts the wrapper, then Popper positions it by updating its
+    // inline style. Consumers need both geometry snapshots, even though the
+    // aggregate "some overlay is open" Boolean never changes.
+    document.body.appendChild(wrapper);
+    await new Promise((r) => setTimeout(r, 0));
+    left = 260;
+    wrapper.style.transform = "translate(260px, 40px)";
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(lefts).toContain(0);
+    expect(lefts).toContain(260);
+    unsub();
+  });
+
   it("detects an open dialog by data-state", async () => {
     const dialog = document.createElement("div");
     dialog.setAttribute("role", "dialog");
@@ -78,6 +104,26 @@ describe("DOM observation (Radix overlays)", () => {
     dialog.setAttribute("data-state", "closed");
     await new Promise((r) => setTimeout(r, 0));
     expect(anyOverlayOpen()).toBe(false);
+  });
+
+  it("detects dialogs that do not use Radix state attributes", async () => {
+    const dialog = document.createElement("section");
+    dialog.setAttribute("role", "dialog");
+    document.body.appendChild(dialog);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(anyOverlayOpen()).toBe(true);
+  });
+
+  it.each([
+    ["explicit Termco overlay", "data-termco-overlay", "true"],
+    ["shared floating surface", "class", "termco-floating"],
+    ["Sonner toast", "data-sonner-toast", ""],
+  ])("detects an open %s", async (_name, attribute, value) => {
+    const overlay = document.createElement("div");
+    overlay.setAttribute(attribute, value);
+    document.body.appendChild(overlay);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(anyOverlayOpen()).toBe(true);
   });
 
   it("ignores mounted-but-closed content (the boot-time false-positive bug)", async () => {

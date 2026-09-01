@@ -88,7 +88,7 @@ import {
   validateProfileDefaults,
   writeParsedProfilePackage,
 } from "./profilePackage";
-import { broadcastEvent } from "../windows";
+import { broadcastEvent, windowForSender } from "../windows";
 
 let active: PreparedProfileProcess | null = null;
 let ipcHost: CapabilityIpcHost | null = null;
@@ -1461,7 +1461,7 @@ async function confirmReplacement(
   ) {
     return true;
   }
-  const parent = BrowserWindow.fromWebContents(sender) ?? undefined;
+  const parent = windowForSender(sender) ?? BrowserWindow.fromWebContents(sender) ?? undefined;
   const result = await dialog.showMessageBox(parent, {
     type: "warning",
     title: "Replace plugin while Termco is running?",
@@ -2581,7 +2581,7 @@ async function exportActiveProfile(
   let target = process.env.TERMCO_E2E_PROFILE_EXPORT_PATH;
   if (!target) {
     const selected = await dialog.showSaveDialog(
-      BrowserWindow.fromWebContents(sender) ?? undefined,
+      windowForSender(sender) ?? BrowserWindow.fromWebContents(sender) ?? undefined,
       {
         title: "Export Termco Profile",
         defaultPath: suggested,
@@ -2615,7 +2615,7 @@ async function importProfilePackage(sender: WebContents): Promise<ProfileImportR
   let selected = process.env.TERMCO_E2E_PROFILE_IMPORT_PATH;
   if (!selected) {
     const picked = await dialog.showOpenDialog(
-      BrowserWindow.fromWebContents(sender) ?? undefined,
+      windowForSender(sender) ?? BrowserWindow.fromWebContents(sender) ?? undefined,
       {
         title: "Import Termco Profile",
         properties: ["openFile"],
@@ -2729,7 +2729,7 @@ async function installPluginFromFolder(
     throw new Error("plugin runtime is not active");
   }
   const picked = await dialog.showOpenDialog(
-    BrowserWindow.fromWebContents(sender) ?? undefined,
+    windowForSender(sender) ?? BrowserWindow.fromWebContents(sender) ?? undefined,
     {
       title: "Install plugin from folder",
       properties: ["openDirectory"],
@@ -3067,7 +3067,7 @@ async function uninstallPlugin(
     process.env.TERMCO_E2E_AUTO_CONFIRM_UNINSTALL === "1";
   const confirmed = autoConfirm ||
     (await dialog.showMessageBox(
-      BrowserWindow.fromWebContents(sender) ?? undefined,
+      windowForSender(sender) ?? BrowserWindow.fromWebContents(sender) ?? undefined,
       {
         type: "warning",
         title: `Uninstall ${source.manifest.name}?`,

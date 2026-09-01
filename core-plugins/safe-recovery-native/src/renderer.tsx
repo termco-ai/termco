@@ -42,6 +42,7 @@ export function SafeRecoveryNotice({
   return (
     <section
       role="alert"
+      data-termco-overlay="true"
       data-testid="safe-profile-recovery"
       className="fixed left-1/2 top-3 z-[100] w-[min(680px,calc(100vw-24px))] -translate-x-1/2 rounded-lg border border-destructive/40 bg-background p-3 shadow-xl"
     >

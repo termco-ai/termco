@@ -126,7 +126,10 @@ function createSettingsView(
         : "No settings sections are available.";
 
     return (
-      <div className="absolute inset-0 z-10 flex min-h-0 flex-col bg-background">
+      <div
+        className="absolute inset-0 z-10 flex min-h-0 flex-col bg-background"
+        data-termco-overlay="true"
+      >
         <div
           data-testid="settings-view"
           data-source-plugin="settings-native"

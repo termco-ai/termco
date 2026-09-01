@@ -31,6 +31,7 @@ import {
   labelForSender,
   markForceClose,
   setAppQuitting,
+  windowForSender,
 } from "./windows";
 
 const ASSET_SCHEME = "termco-asset";
@@ -234,7 +235,7 @@ function registerIpcEndpoints(): void {
         payload,
       }: { action: string; payload?: Record<string, unknown> },
     ) => {
-      const win = BrowserWindow.fromWebContents(event.sender);
+      const win = windowForSender(event.sender) ?? BrowserWindow.fromWebContents(event.sender);
       if (!win) return null;
       switch (action) {
         case "show":

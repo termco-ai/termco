@@ -12,7 +12,7 @@ import type {
   RendererProfileChange,
 } from "../../../src/platform/rendererBootstrap";
 import type { PluginRemovalImpact } from "../../../src/platform/runtime";
-import { labelForSender } from "../windows";
+import { labelForSender, windowForSender } from "../windows";
 
 const CHANNEL = "termco:services:call";
 const RENDERER_PROFILE_CHANNEL = "termco:plugins:renderer-profile";
@@ -291,7 +291,7 @@ export class CapabilityIpcHost {
     ipcMain.handle(CHANNEL, (event, input: unknown) =>
       captureCapabilityResult(async () => {
         this.#trackSender(event.sender);
-        const win = BrowserWindow.fromWebContents(event.sender);
+        const win = windowForSender(event.sender) ?? BrowserWindow.fromWebContents(event.sender);
         const call = attachAuthenticatedCaller(
           parseCall(input),
           event.sender.id,

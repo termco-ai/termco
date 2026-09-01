@@ -76,6 +76,7 @@ function componentSource(
     {
       type: "button",
       "aria-label": ${JSON.stringify(request.name)},
+      "data-termco-overlay": "true",
       style: {
         position: "fixed",
         right: 24,
