@@ -99,6 +99,17 @@ describe("release workflow platform metadata", () => {
     expect(workflow).not.toContain("--x64 --arm64");
   });
 
+  it("publishes curated release notes when the version has them", async () => {
+    const workflow = normalizeWorkflowText(
+      await readFile(".github/workflows/application-release.yml", "utf8"),
+    );
+    expect(workflow).toContain(
+      `NOTES_FILE=".github/release-notes/\${RELEASE_TAG}.md"`,
+    );
+    expect(workflow).toContain('--notes-file "$NOTES_FILE"');
+    expect(workflow).toContain("--generate-notes");
+  });
+
   it("checks workflow structure after a Windows CRLF checkout", () => {
     const workflow = normalizeWorkflowText(
       "- id: macos-x64\r\n  os: macos-15-intel\r\n",

@@ -76,6 +76,7 @@ describe("UpdaterDialog", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     fireEvent.click(screen.getByText("Review"));
     expect(screen.getByRole("dialog")).toBeDefined();
+    expect(screen.getByText("What’s new")).toBeDefined();
     expect(screen.getByText("changelog text")).toBeDefined();
     fireEvent.click(screen.getByText("Install & restart"));
     expect(state.install).toHaveBeenCalled();
@@ -135,6 +136,8 @@ describe("UpdaterDialog", () => {
     render(<UpdaterDialog />);
     expect(screen.getByText("Termco v2.0.0 is available")).toBeDefined();
     fireEvent.click(screen.getByText("Review"));
+    expect(screen.getByText("What’s new")).toBeDefined();
+    expect(screen.getByText("notes")).toBeDefined();
     expect(screen.getByText(/You're on v1\.0\.0/)).toBeDefined();
     expect(screen.getByText("$ yay -S termco-bin")).toBeDefined();
     fireEvent.click(screen.getByText("Debian / Ubuntu"));
@@ -197,6 +200,7 @@ describe("UpdaterDialog", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     fireEvent.click(screen.getByText("Review"));
     expect(screen.getByText("2 plugins ready to update")).toBeDefined();
+    expect(screen.getByText("What’s new")).toBeDefined();
     expect(screen.getByTestId("plugin-release-scroll-region")).toBeDefined();
     expect(screen.getByTestId("update-dialog-footer")).toBeDefined();
     expect(screen.getByText("1.0.0 → 1.1.0")).toBeDefined();

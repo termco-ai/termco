@@ -216,7 +216,7 @@ describe("source-owned updater state", () => {
     await waitFor(() => expect(result.current.status.kind).toBe("uptodate"));
   });
 
-  it("streams shared progress, reaches ready, relaunches, and unsubscribes", async () => {
+  it("streams shared progress, delegates restart to the updater, and unsubscribes", async () => {
     vi.mocked(updates.check).mockResolvedValue(available());
     let finish!: () => void;
     vi.mocked(updates.downloadAndInstall).mockImplementation(
@@ -228,6 +228,7 @@ describe("source-owned updater state", () => {
 
     let installing!: Promise<void>;
     act(() => { installing = result.current.install(); });
+    expect(updates.downloadAndInstall).toHaveBeenCalledOnce();
     expect(result.current.status).toEqual({
       kind: "downloading",
       downloaded: 0,
@@ -253,7 +254,7 @@ describe("source-owned updater state", () => {
     act(() => events.emit("updater://progress", { event: "Finished" }));
     expect(result.current.status).toEqual({ kind: "ready" });
     await act(async () => { finish(); await installing; });
-    expect(desktop.relaunch).toHaveBeenCalled();
+    expect(desktop.relaunch).not.toHaveBeenCalled();
     expect(events.listenerCount("updater://progress")).toBe(0);
   });
 

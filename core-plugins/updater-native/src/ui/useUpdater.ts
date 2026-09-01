@@ -208,7 +208,6 @@ export function createUpdaterState(
       );
       try {
         await dependencies.updates.downloadAndInstall();
-        dependencies.desktop.relaunch();
       } catch (error) {
         publish({ kind: "error", message: String(error) });
       } finally {

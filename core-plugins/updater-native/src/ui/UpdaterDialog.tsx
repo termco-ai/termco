@@ -48,6 +48,7 @@ export function createUpdaterDialog(
 
     const update = status.kind === "available" ? status.update : null;
     const manual = status.kind === "manual-available" ? status.info : null;
+    const applicationNotes = update?.body || manual?.body || "";
     const downloading = status.kind === "downloading";
     const ready = status.kind === "ready";
     const pluginRelease =
@@ -188,7 +189,9 @@ export function createUpdaterDialog(
                   ? "Termco is downloading and verifying the signed update."
                   : manual
                     ? `You're on v${manual.currentVersion}. Pick your distro and run the command, or grab the package from GitHub.`
-                    : update?.body || "A new version is ready to install."}
+                    : applicationNotes
+                      ? "Review what changed, then install when you’re ready."
+                      : "A new version is ready to install."}
             </ui.DialogDescription>
           </ui.DialogHeader>
 
@@ -220,6 +223,9 @@ export function createUpdaterDialog(
               className="min-h-0 flex-1 overflow-y-auto px-6 py-3"
               data-testid="plugin-release-scroll-region"
             >
+            <p className="mb-2 text-xs font-medium text-muted-foreground">
+              What’s new
+            </p>
             <div
               className="divide-y divide-border overflow-hidden rounded-lg border border-border"
               data-testid="plugin-release-items"
@@ -266,15 +272,35 @@ export function createUpdaterDialog(
             </div>
           ) : null}
 
-          {manual ? (
-            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-              <ManualInstallPanel
-                distro={distro}
-                onSelectDistro={setDistro}
-                activeCommand={activeCommand}
-                copied={copied}
-                onCopy={() => void copyCommand()}
-              />
+          {applicationNotes || manual ? (
+            <div
+              className="min-h-0 flex-1 overflow-y-auto px-6 py-4"
+              data-testid="application-release-content"
+            >
+              {applicationNotes ? (
+                <section aria-labelledby="application-release-notes-heading">
+                  <p
+                    id="application-release-notes-heading"
+                    className="text-xs font-medium text-muted-foreground"
+                  >
+                    What’s new
+                  </p>
+                  <p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground">
+                    {applicationNotes}
+                  </p>
+                </section>
+              ) : null}
+              {manual ? (
+                <div className={applicationNotes ? "mt-4" : undefined}>
+                  <ManualInstallPanel
+                    distro={distro}
+                    onSelectDistro={setDistro}
+                    activeCommand={activeCommand}
+                    copied={copied}
+                    onCopy={() => void copyCommand()}
+                  />
+                </div>
+              ) : null}
             </div>
           ) : null}
 

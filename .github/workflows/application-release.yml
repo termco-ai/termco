@@ -309,9 +309,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
+          NOTES_FILE=".github/release-notes/${RELEASE_TAG}.md"
+          NOTES_ARGUMENTS=(--generate-notes)
+          if [ -f "$NOTES_FILE" ]; then
+            NOTES_ARGUMENTS=(--notes-file "$NOTES_FILE")
+          fi
           gh release create "$RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --title "Termco ${RELEASE_TAG#v}" \
-            --generate-notes \
+            "${NOTES_ARGUMENTS[@]}" \
             --verify-tag \
             release/*

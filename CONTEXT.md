@@ -1,6 +1,6 @@
-# Termco Profiles and Onboarding
+# Termco Profiles, Onboarding, and Releases
 
-This context names the portable Termco setup and guided-learning concepts used by the product. A company profile is a developer-controlled template, never a management or enforcement mechanism.
+This context names the portable setup, guided-learning, and independently released plugin concepts used by Termco. A company profile is a developer-controlled template, never a management or enforcement mechanism.
 
 ## Profiles
 
@@ -49,3 +49,17 @@ _Avoid_: Hard-coded integration
 **Onboarding Progress**:
 Local developer state recording completion or dismissal of a specific version of an Onboarding Step.
 _Avoid_: Company tracking, telemetry
+
+## Releases
+
+**Plugin Guide**:
+Stable user-facing documentation that explains a plugin's purpose, capabilities, and use without describing its release history.
+_Avoid_: Version history, release notes
+
+**Plugin Changelog**:
+A user-facing history whose entries are owned by exact plugin versions and describe what changed in each version.
+_Avoid_: Plugin Guide, application changelog
+
+**Plugin Release Note**:
+The current plugin version's changelog entry carried by a signed plugin release and shown during update review.
+_Avoid_: Plugin description, commit message
