@@ -41,13 +41,12 @@ function serializeNode(node: PaneNode, activeLeafId: number): SerializedNode {
   return {
     kind: "split",
     dir: node.dir,
-    children: node.children.map((child) =>
-      serializeNode(child, activeLeafId),
-    ),
+    children: node.children.map((child) => serializeNode(child, activeLeafId)),
   };
 }
 
 export function isSerializableTab(tab: Tab): boolean {
+  if (tab.restoreOnRestart === false) return false;
   if (isPluginTab(tab)) return true;
   switch (tab.kind) {
     case "terminal":
@@ -76,9 +75,7 @@ function serializeTab(tab: Tab): SerializedTab | null {
         kind: "terminal",
         tree: serializeNode(tab.paneTree, tab.activeLeafId),
         ...(tab.blocks ? { blocks: true } : {}),
-        ...(tab.customTitle !== undefined
-          ? { customTitle: tab.customTitle }
-          : {}),
+        ...(tab.customTitle !== undefined ? { customTitle: tab.customTitle } : {}),
       };
     case "editor":
       return { kind: "editor", path: tab.path };
@@ -132,42 +129,31 @@ function hydrateNode(
       ...(node.cwd !== undefined ? { cwd: node.cwd } : {}),
     };
   }
-  const children = node.children.map((child) =>
-    hydrateNode(child, allocate, active),
-  );
+  const children = node.children.map((child) => hydrateNode(child, allocate, active));
   if (children.length === 0) return { kind: "leaf", id: allocate() };
   if (children.length === 1) return children[0];
   return { kind: "split", id: allocate(), dir: node.dir, children };
 }
 
-function hydrateTab(
-  saved: SerializedTab,
-  rigId: string,
-  allocate: () => number,
-): Tab | null {
+function hydrateTab(saved: SerializedTab, rigId: string, allocate: () => number): Tab | null {
   switch (saved.kind) {
     case "terminal": {
       const active = { id: null as number | null };
       const paneTree = hydrateNode(saved.tree, allocate, active);
       const leaves = collectLeaves(paneTree);
       const activeLeafId = active.id ?? leaves[0]?.id ?? allocate();
-      const cwd =
-        leaves.find((leaf) => leaf.id === activeLeafId)?.cwd ?? leaves[0]?.cwd;
+      const cwd = leaves.find((leaf) => leaf.id === activeLeafId)?.cwd ?? leaves[0]?.cwd;
       return {
         id: allocate(),
         kind: "terminal",
         rigId,
         cold: true,
-        title:
-          saved.customTitle ??
-          (cwd ? basename(cwd) : saved.blocks ? "blocks" : "shell"),
+        title: saved.customTitle ?? (cwd ? basename(cwd) : saved.blocks ? "blocks" : "shell"),
         cwd,
         paneTree,
         activeLeafId,
         ...(saved.blocks ? { blocks: true } : {}),
-        ...(saved.customTitle !== undefined
-          ? { customTitle: saved.customTitle }
-          : {}),
+        ...(saved.customTitle !== undefined ? { customTitle: saved.customTitle } : {}),
       } satisfies TerminalTab;
     }
     case "editor":

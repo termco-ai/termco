@@ -64,6 +64,7 @@ const aiSessions: AiSessionsCapability = vi.hoisted(() => ({
   closePanel: vi.fn(),
   openMini: vi.fn(),
   closeMini: vi.fn(),
+  startConversation: vi.fn(() => "session" as never),
   focusInput: vi.fn(),
   attachSelection: vi.fn(),
   attachFile: vi.fn(),

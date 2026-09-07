@@ -27,13 +27,7 @@ import {
 } from "../panes";
 import type { TerminalSessionsCapability } from "@termco/terminal-base";
 import type { WorkspaceTabRecord, WorkspaceTabsCapability } from "@termco/workspace-base";
-import {
-  type SetStateAction,
-  useCallback,
-  useEffect,
-  useRef,
-  useSyncExternalStore,
-} from "react";
+import { type SetStateAction, useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { basename, titleFromUrl } from "./tabHelpers";
 import { planRigRemoval } from "./tabOps";
 import {
@@ -48,13 +42,14 @@ import {
 } from "./tabTypes";
 
 function toWorkspaceTab(tab: Tab): WorkspaceTabRecord {
-  const { id, rigId, kind, title, cold, ...data } = tab;
+  const { id, rigId, kind, title, cold, restoreOnRestart, ...data } = tab;
   return {
     id,
     rigId,
     kind,
     title,
     cold,
+    restoreOnRestart,
     data,
   };
 }
@@ -67,6 +62,7 @@ function fromWorkspaceTab(tab: WorkspaceTabRecord): Tab {
     kind: tab.kind,
     title: tab.title,
     ...(tab.cold !== undefined ? { cold: tab.cold } : {}),
+    ...(tab.restoreOnRestart !== undefined ? { restoreOnRestart: tab.restoreOnRestart } : {}),
   } as Tab;
 }
 
@@ -170,15 +166,9 @@ export function useTabs(
     [workspaceTabs],
   );
 
-  const allocId = useCallback(
-    () => workspaceTabs.allocate(1)[0],
-    [workspaceTabs],
-  );
+  const allocId = useCallback(() => workspaceTabs.allocate(1)[0], [workspaceTabs]);
 
-  const markBooted = useCallback(
-    () => workspaceTabs.transition({ booted: true }),
-    [workspaceTabs],
-  );
+  const markBooted = useCallback(() => workspaceTabs.transition({ booted: true }), [workspaceTabs]);
 
   const setActiveRigForNewTabs = useCallback(
     (rigId: string) => {
@@ -305,16 +295,13 @@ export function useTabs(
   );
 
   /** Insert `tab` right after `anchorId` (or at the end if not found). */
-  const insertAfter = useCallback(
-    (list: Tab[], anchorId: number, tab: Tab): Tab[] => {
-      const idx = list.findIndex((t) => t.id === anchorId);
-      if (idx < 0) return [...list, tab];
-      const next = list.slice();
-      next.splice(idx + 1, 0, tab);
-      return next;
-    },
-    [],
-  );
+  const insertAfter = useCallback((list: Tab[], anchorId: number, tab: Tab): Tab[] => {
+    const idx = list.findIndex((t) => t.id === anchorId);
+    if (idx < 0) return [...list, tab];
+    const next = list.slice();
+    next.splice(idx + 1, 0, tab);
+    return next;
+  }, []);
 
   /** Open a fresh terminal tab immediately to the right of `anchorId`. */
   const newTabRightOf = useCallback(
@@ -394,9 +381,8 @@ export function useTabs(
 
   useEffect(() => {
     if (!import.meta.env?.DEV || typeof window === "undefined") return;
-    (
-      window as unknown as { __termcoNewBlockTab?: (cwd?: string) => number }
-    ).__termcoNewBlockTab = newBlockTab;
+    (window as unknown as { __termcoNewBlockTab?: (cwd?: string) => number }).__termcoNewBlockTab =
+      newBlockTab;
   }, [newBlockTab]);
 
   const newPrivateTab = useCallback(
@@ -444,14 +430,10 @@ export function useTabs(
   const openCommitHistoryTab = useCallback(
     (input: { repoRoot: string; branch?: string | null }) => {
       const curr = tabsRef.current;
-      const existing = curr.find(
-        (t) => t.kind === "git-history" && t.repoRoot === input.repoRoot,
-      );
+      const existing = curr.find((t) => t.kind === "git-history" && t.repoRoot === input.repoRoot);
       const title = input.branch ? `History · ${input.branch}` : "Git History";
       if (existing) {
-        commitTabs(
-          curr.map((t) => (t.id === existing.id ? { ...t, title } : t)),
-        );
+        commitTabs(curr.map((t) => (t.id === existing.id ? { ...t, title } : t)));
         setActiveId(existing.id);
         return existing.id;
       }
@@ -533,8 +515,7 @@ export function useTabs(
       const curr = tabsRef.current;
       const target = curr.find((t) => t.id === id);
       if (!target) return;
-      const toDispose =
-        target.kind === "terminal" ? leafIds(target.paneTree) : [];
+      const toDispose = target.kind === "terminal" ? leafIds(target.paneTree) : [];
       workspaceTabs.close(id);
       syncProviderRefs();
       for (const lid of toDispose) terminalSessions.dispose(lid);
@@ -547,9 +528,7 @@ export function useTabs(
    * both panes. */
   const setSplit = useCallback((id: number) => {
     if (id === activeIdRef.current) {
-      const other = tabsRef.current.find(
-        (t) => t.id !== id && t.rigId === activeRigIdRef.current,
-      );
+      const other = tabsRef.current.find((t) => t.id !== id && t.rigId === activeRigIdRef.current);
       if (!other) return; // nothing else to show on the left — can't split
       setActiveId(other.id);
     }
@@ -569,8 +548,7 @@ export function useTabs(
               ...(patch.title !== undefined && { title: patch.title }),
               ...(patch.cwd !== undefined && { cwd: patch.cwd }),
               ...(patch.customTitle !== undefined && {
-                customTitle:
-                  patch.customTitle === "" ? undefined : patch.customTitle,
+                customTitle: patch.customTitle === "" ? undefined : patch.customTitle,
               }),
             };
           }
@@ -592,9 +570,7 @@ export function useTabs(
           }
           // editor tab: auto-promote from preview the moment the file becomes dirty.
           const autoPin =
-            patch.dirty === true && (x as EditorTab).preview
-              ? { preview: false }
-              : {};
+            patch.dirty === true && (x as EditorTab).preview ? { preview: false } : {};
           return {
             ...x,
             ...autoPin,
@@ -694,19 +670,8 @@ export function useTabs(
       if (leafIds(t.paneTree).length >= MAX_PANES_PER_TAB) return null;
       const splitId = allocId();
       const leafId = allocId();
-      const paneTree = splitLeaf(
-        t.paneTree,
-        t.activeLeafId,
-        splitId,
-        leafId,
-        dir,
-        t.cwd,
-      );
-      commitTabs(
-        curr.map((x) =>
-          x === t ? { ...t, paneTree, activeLeafId: leafId } : x,
-        ),
-      );
+      const paneTree = splitLeaf(t.paneTree, t.activeLeafId, splitId, leafId, dir, t.cwd);
+      commitTabs(curr.map((x) => (x === t ? { ...t, paneTree, activeLeafId: leafId } : x)));
       return leafId;
     },
     [commitTabs],
@@ -716,8 +681,7 @@ export function useTabs(
     (leafId: number): void => {
       const curr = tabsRef.current;
       const tab = curr.find(
-        (t): t is TerminalTab =>
-          t.kind === "terminal" && hasLeaf(t.paneTree, leafId),
+        (t): t is TerminalTab => t.kind === "terminal" && hasLeaf(t.paneTree, leafId),
       );
       if (!tab) return;
       const newTree = removeLeaf(tab.paneTree, leafId);
@@ -738,9 +702,7 @@ export function useTabs(
       }
       commitTabs(
         curr.map((x) =>
-          x.id === tab.id
-            ? { ...tab, paneTree: newTree, activeLeafId: newActive }
-            : x,
+          x.id === tab.id ? { ...tab, paneTree: newTree, activeLeafId: newActive } : x,
         ),
       );
       terminalSessions.dispose(leafId);
@@ -769,9 +731,7 @@ export function useTabs(
       const newActive = sib && remaining.includes(sib) ? sib : remaining[0];
       commitTabs(
         curr.map((x) =>
-          x.id === tabId
-            ? { ...t, paneTree: newTree, activeLeafId: newActive }
-            : x,
+          x.id === tabId ? { ...t, paneTree: newTree, activeLeafId: newActive } : x,
         ),
       );
       terminalSessions.dispose(target);

@@ -169,6 +169,14 @@ describe("migrated product ownership", () => {
     await expect(
       fs.stat(join(root, "scripts/build-server.mjs")),
     ).rejects.toMatchObject({ code: "ENOENT" });
+    const devOrchestrator = await fs.readFile(
+      join(root, "scripts/dev.mjs"),
+      "utf8",
+    );
+    expect(devOrchestrator).not.toContain("build-server.mjs");
+    expect(devOrchestrator).toContain(
+      '["scripts/plugin-compiler.mjs", "--all"]',
+    );
     const manifest = JSON.parse(
       await fs.readFile(
         join(root, "plugin-repository/plugins/ssh-native/termco-plugin.json"),

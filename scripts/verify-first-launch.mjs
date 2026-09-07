@@ -321,8 +321,8 @@ try {
   const sourcePlugins = await directories(sourceRoot);
   const cacheRoot = join(platformRoot, "cache");
   const cachedPlugins = await directories(cacheRoot);
-  assert.equal(sourcePlugins.length, 100);
-  assert.equal(cachedPlugins.length, 100);
+  assert.equal(sourcePlugins.length, 101);
+  assert.equal(cachedPlugins.length, 101);
   assert.deepEqual(await filesNamed(sourceRoot, "AGENTS.md"), []);
   if (process.platform !== "win32") {
     const spawnHelpers = await filesNamed(
@@ -339,7 +339,7 @@ try {
   );
   assert.equal(
     profile.plugins.filter((plugin) => plugin.module.startsWith("official:")).length,
-    100,
+    101,
   );
   assert.deepEqual(
     profile.plugins

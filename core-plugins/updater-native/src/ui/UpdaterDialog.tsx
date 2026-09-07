@@ -241,11 +241,9 @@ export function createUpdaterDialog(
                       {plugin.currentVersion ?? "new"} → {plugin.version}
                     </span>
                   </div>
-                  {plugin.notes ? (
-                    <p className="mt-1 line-clamp-3 break-words text-xs text-muted-foreground">
-                      {plugin.notes}
-                    </p>
-                  ) : null}
+                  <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">
+                    {plugin.notes || "No release notes were provided for this version."}
+                  </p>
                 </div>
               ))}
             </div>

@@ -1,5 +1,5 @@
 import type { Tab } from "../tabs";
-import type { WorkspaceTabsCapability } from "@termco/workspace-base";
+import type { WorkspaceTabsCapability, WorkspaceRigsCapability } from "@termco/workspace-base";
 import { useCallback, useEffect, useRef } from "react";
 import { isSerializableTab, serializeTabs } from "../lib/rigSerialization";
 
@@ -15,6 +15,7 @@ type Snapshot = {
 type Params = Snapshot & {
   enabled: boolean;
   workspaceTabs: WorkspaceTabsCapability;
+  rigs?: WorkspaceRigsCapability;
 };
 
 type LastWrite = {
@@ -30,9 +31,13 @@ export function useRigPersistence({
   activeRigId,
   enabled,
   workspaceTabs,
+  rigs,
 }: Params) {
   const last = useRef<Map<string, LastWrite>>(new Map());
   const seeded = useRef(false);
+  // Only clear layouts whose tabs have actually been loaded by this shell.
+  const observedRigs = useRef(new Set<string>());
+  if (enabled) for (const tab of tabs) observedRigs.current.add(tab.rigId);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latest = useRef<Snapshot>({ tabs, activeId, splitTabId, activeRigId });
   latest.current = { tabs, activeId, splitTabId, activeRigId };
@@ -57,7 +62,15 @@ export function useRigPersistence({
         else groups.set(tab.rigId, [tab]);
       }
 
+      for (const rigId of observedRigs.current) {
+        if (!groups.has(rigId)) groups.set(rigId, []);
+      }
       for (const [rigId, group] of groups) {
+        if (rigs && !rigs.snapshot().rigs.some((rig) => rig.id === rigId)) {
+          last.current.delete(rigId);
+          observedRigs.current.delete(rigId);
+          continue;
+        }
         const serialized = serializeTabs(group);
         const previous = last.current.get(rigId);
         let activeTabIndex = previous?.activeTabIndex ?? 0;
@@ -71,6 +84,10 @@ export function useRigPersistence({
           splitTabIndex = snapshot.splitTabId
             ? serializable.findIndex((tab) => tab.id === snapshot.splitTabId)
             : -1;
+        }
+        if (serialized.length === 0) {
+          activeTabIndex = 0;
+          splitTabIndex = -1;
         }
         const json = JSON.stringify(serialized);
         if (
@@ -90,7 +107,7 @@ export function useRigPersistence({
         });
       }
     },
-    [workspaceTabs],
+    [workspaceTabs, rigs],
   );
 
   useEffect(() => {

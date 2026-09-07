@@ -86,6 +86,7 @@ export function useRigSync({
     splitTabId,
     activeRigId: activeRigId ?? DEFAULT_RIG_ID,
     enabled: rigsHydrated,
+    rigs,
     workspaceTabs,
   });
 

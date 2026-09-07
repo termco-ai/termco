@@ -34,6 +34,7 @@ let replacementPluginScopes: typeof import("./pluginRuntime").replacementPluginS
 let planPlugin: typeof import("./pluginRuntime").planPlugin;
 let plannedMutation: typeof import("./pluginRuntime").plannedMutation;
 let snapshotProfile: typeof import("./pluginRuntime").snapshotProfile;
+let pluginPlatformUserRoot: typeof import("./pluginRuntime").pluginPlatformUserRoot;
 
 beforeAll(async () => {
   ({
@@ -52,7 +53,19 @@ beforeAll(async () => {
     planPlugin,
     plannedMutation,
     snapshotProfile,
+    pluginPlatformUserRoot,
   } = await import("./pluginRuntime"));
+});
+
+describe("plugin platform paths", () => {
+  it("isolates development plugin state from the packaged application", () => {
+    expect(pluginPlatformUserRoot("/user-data", false)).toBe(
+      "/user-data/plugin-platform-development",
+    );
+    expect(pluginPlatformUserRoot("/user-data", true)).toBe(
+      "/user-data/plugin-platform",
+    );
+  });
 });
 
 describe("plugin completion transactions", () => {

@@ -214,6 +214,41 @@ describe("UpdaterDialog", () => {
     expect(state.install).toHaveBeenCalled();
   });
 
+  it("always gives every plugin update a visible, untruncated change summary", () => {
+    state.status = {
+      kind: "plugin-available",
+      release: {
+        releaseId: "plugins-2026.09.02.1",
+        publishedAt: "2026-09-02T12:00:00.000Z",
+        plugins: [
+          {
+            id: "browser-native",
+            name: "Embedded Browser",
+            currentVersion: "1.0.1",
+            version: "1.0.2",
+            notes: "First line\nSecond line\nThird line\nFourth line",
+          },
+          {
+            id: "missing-notes-native",
+            name: "Missing Notes",
+            currentVersion: "1.0.0",
+            version: "1.0.1",
+            notes: "",
+          },
+        ],
+      },
+    };
+    render(<UpdaterDialog />);
+    fireEvent.click(screen.getByText("Review"));
+
+    const notes = screen.getByText(/First line/);
+    expect(notes.className).toContain("whitespace-pre-wrap");
+    expect(notes.className).not.toContain("line-clamp");
+    expect(
+      screen.getByText("No release notes were provided for this version."),
+    ).toBeDefined();
+  });
+
   it("shows real plugin installation progress above the scroll region", () => {
     state.status = {
       kind: "plugin-installing",

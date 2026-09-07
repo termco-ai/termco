@@ -5,17 +5,29 @@
  */
 import { spawn } from "node:child_process";
 import { watch } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import net from "node:net";
 import { spawnElectronProcess } from "./dev-electron-process.mjs";
 import { childIsRunning, stopDevStack } from "./dev-process-lifecycle.mjs";
+import { affectedPluginRoots } from "./dev-plugin-dependencies.mjs";
 import { resolveDevPort } from "./dev-port.mjs";
+import {
+  compilePlugin,
+  discoverPluginSource,
+} from "./plugin-compiler-lib.mjs";
 
 const VITE_PORT = resolveDevPort();
 const VITE_URL = `http://localhost:${VITE_PORT}`;
 const VITE_ENTRY = fileURLToPath(
   new URL("../node_modules/vite/bin/vite.js", import.meta.url),
 );
+const REPOSITORY_ROOT = fileURLToPath(new URL("..", import.meta.url));
+const PLUGIN_CACHE_ROOT = join(REPOSITORY_ROOT, ".termco-cache", "plugins");
+const PLUGIN_SOURCE_ROOTS = [
+  join(REPOSITORY_ROOT, "plugin-repository", "plugins"),
+  join(REPOSITORY_ROOT, "core-plugins"),
+];
 
 const children = [];
 function run(cmd, args, extraEnv = {}) {
@@ -35,6 +47,10 @@ let electron = null;
 let restarting = false;
 let shuttingDown = false;
 let restartTimer = null;
+let restartReason = "main/preload changed";
+let pluginCompileTimer = null;
+let pluginCompileRunning = false;
+const pendingPluginRoots = new Set();
 const watchers = [];
 
 function launchElectron() {
@@ -44,9 +60,9 @@ function launchElectron() {
   });
 }
 
-function restartElectron() {
+function restartElectron(reason) {
   if (!childIsRunning(electron)) return launchElectron();
-  console.log("\n[dev] main/preload changed — restarting Electron…");
+  console.log(`\n[dev] ${reason} — restarting Electron…`);
   restarting = true;
   electron.once("exit", () => {
     restarting = false;
@@ -60,6 +76,7 @@ async function shutdown() {
   shuttingDown = true;
   restarting = false;
   if (restartTimer !== null) clearTimeout(restartTimer);
+  if (pluginCompileTimer !== null) clearTimeout(pluginCompileTimer);
   for (const watcher of watchers) watcher.close();
   await stopDevStack(electron, children);
   process.exitCode = 0;
@@ -110,7 +127,7 @@ function waitForSuccessfulExit(child, label) {
 // failure therefore stops dev at the real cause.
 console.log("[dev] compiling source-owned plugin packages…");
 await waitForSuccessfulExit(
-  run(process.execPath, ["scripts/plugin-compiler.mjs"]),
+  run(process.execPath, ["scripts/plugin-compiler.mjs", "--all"]),
   "plugin compilation",
 );
 // 1) Renderer dev server
@@ -120,8 +137,6 @@ await waitForSuccessfulExit(
 run(process.execPath, [VITE_ENTRY, "--port", String(VITE_PORT)]);
 // 2) Electron bundle in watch mode
 run("node", ["scripts/build-electron.mjs", "--watch"]);
-// 2b) SSH remote-server bundle in watch mode (uploaded to remotes on connect)
-run("node", ["scripts/build-server.mjs", "--watch"]);
 
 // 3) Wait for Vite, then launch Electron
 await waitForPort(VITE_PORT);
@@ -132,11 +147,71 @@ launchElectron();
 
 // 4) Restart Electron whenever the main/preload bundle is rebuilt (debounced —
 // esbuild emits the .cjs + .cjs.map together on each change).
-const scheduleRestart = () => {
+const scheduleRestart = (reason = "main/preload changed") => {
   if (shuttingDown) return;
+  restartReason = reason;
   clearTimeout(restartTimer);
-  restartTimer = setTimeout(restartElectron, 350);
+  restartTimer = setTimeout(() => restartElectron(restartReason), 350);
 };
+
+async function compileChangedPlugins() {
+  if (pluginCompileRunning || shuttingDown) return;
+  pluginCompileRunning = true;
+  let rebuilt = false;
+  try {
+    while (pendingPluginRoots.size > 0 && !shuttingDown) {
+      const changedRoots = [...pendingPluginRoots];
+      pendingPluginRoots.clear();
+      const roots = await affectedPluginRoots(PLUGIN_SOURCE_ROOTS, changedRoots);
+      const results = await Promise.all(
+        roots.map(async (root) =>
+          compilePlugin(await discoverPluginSource(root), PLUGIN_CACHE_ROOT),
+        ),
+      );
+      console.log(
+        `[dev] rebuilt local plugin${results.length === 1 ? "" : "s"}: ${results
+          .map(({ pluginId }) => pluginId)
+          .join(", ")}`,
+      );
+      rebuilt = true;
+    }
+    if (rebuilt) scheduleRestart("local plugin rebuilt");
+  } catch (error) {
+    console.error(`[dev] local plugin rebuild failed: ${error instanceof Error ? error.stack : error}`);
+  } finally {
+    pluginCompileRunning = false;
+    if (pendingPluginRoots.size > 0 && !shuttingDown) {
+      pluginCompileTimer = setTimeout(() => {
+        pluginCompileTimer = null;
+        void compileChangedPlugins();
+      }, 200);
+    }
+  }
+}
+
+function schedulePluginCompile(root, filename) {
+  if (shuttingDown || typeof filename !== "string") return;
+  const [pluginId] = filename.split(/[\\/]/);
+  if (!pluginId || pluginId.startsWith(".")) return;
+  pendingPluginRoots.add(join(root, pluginId));
+  if (pluginCompileTimer !== null) clearTimeout(pluginCompileTimer);
+  pluginCompileTimer = setTimeout(() => {
+    pluginCompileTimer = null;
+    void compileChangedPlugins();
+  }, 200);
+}
+
+// Plugin bundles are loaded from the compiled dev cache, outside Vite's module
+// graph. Watch their source roots explicitly, rebuild the changed plugin and consumers of its bundled sources,
+// then restart Electron so both main and renderer entrypoints use that bundle.
+for (const root of PLUGIN_SOURCE_ROOTS) {
+  watchers.push(
+    watch(root, { recursive: true }, (_event, filename) =>
+      schedulePluginCompile(root, filename),
+    ),
+  );
+}
+
 for (const dir of ["dist-electron/main", "dist-electron/preload"]) {
   try {
     watchers.push(watch(dir, { persistent: true }, scheduleRestart));

@@ -25,6 +25,8 @@ type TabBase = {
   rigId: string;
   /** Restored from disk, not yet activated: rendered as a placeholder, not mounted. */
   cold?: boolean;
+  /** False when reopening this live surface after restart would be misleading. */
+  restoreOnRestart?: boolean;
 };
 
 /** A shell/terminal tab, optionally split into a tree of panes. */
@@ -151,7 +153,7 @@ export type PluginTabKind = `plugin:${string}`;
 
 /** A generic tab owned by a plugin-registered kind (public `tabs.open()`).
  * `data` is an opaque, JSON-serializable payload the owning plugin's Stack
- * receives back; it is persisted with the rig. */
+ * receives back. It is persisted with the rig unless `restoreOnRestart` is false. */
 export type PluginTab = TabBase & {
   id: number;
   kind: PluginTabKind;

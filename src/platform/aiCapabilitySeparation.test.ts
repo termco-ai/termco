@@ -1,7 +1,4 @@
-import type {
-  AiSessionsCapability,
-  AiSessionsHostControl,
-} from "@termco/ai-sessions-base";
+import type { AiSessionsCapability, AiSessionsHostControl } from "@termco/ai-sessions-base";
 import type { AiToolRegistry } from "@termco/ai-tools-base";
 import type { SessionHistoryCapability } from "@termco/session-base";
 import type {
@@ -59,6 +56,7 @@ function sessionDelegate(): AiSessionsCapability {
     togglePanel: () => {},
     openMini: () => {},
     closeMini: () => {},
+    startConversation: () => "new-session" as never,
     focusInput: () => {},
     attachSelection: () => {},
     attachFile: () => {},
@@ -76,10 +74,7 @@ describe("AI capability ownership separation", () => {
     const runtime = new CapabilityRuntime(tree());
     const sessionHistory: PluginModule = {
       activate(context) {
-        context.provide(
-          "session.history",
-          {} as SessionHistoryCapability,
-        );
+        context.provide("session.history", {} as SessionHistoryCapability);
       },
     };
     await runtime.activate("session-history", sessionHistory);
@@ -101,8 +96,8 @@ describe("AI capability ownership separation", () => {
       async activate(context) {
         await context.effect(() =>
           (
-            context.get<AiSessionsCapability>("ai.sessions") as
-              AiSessionsCapability & AiSessionsHostControl
+            context.get<AiSessionsCapability>("ai.sessions") as AiSessionsCapability &
+              AiSessionsHostControl
           ).bind(sessionDelegate()),
         );
         await context.effect(() =>
@@ -126,12 +121,9 @@ describe("AI capability ownership separation", () => {
     await runtime.activate("chat-presentation", chat);
 
     const tools = runtime.platformCapability<AiToolRegistry>("ai.tools");
-    const sessions = runtime.platformCapability<AiSessionsCapability>(
-      "ai.sessions",
-    );
-    const composer = runtime.platformCapability<UiWorkspaceComposerCapability>(
-      "ui.workspace-composer",
-    );
+    const sessions = runtime.platformCapability<AiSessionsCapability>("ai.sessions");
+    const composer =
+      runtime.platformCapability<UiWorkspaceComposerCapability>("ui.workspace-composer");
     expect(sessions.snapshot().activeSessionId).toBe("session-a");
     expect(composer.snapshot().available).toBe(true);
 
@@ -140,9 +132,7 @@ describe("AI capability ownership separation", () => {
     expect(runtime.platformCapability("ai.tools")).toBe(tools);
     expect(runtime.platformCapability("ai.sessions")).toBe(sessions);
     expect(runtime.platformCapability("ui.workspace-composer")).toBe(composer);
-    expect(tools.snapshot().map((entry) => entry.id)).toEqual([
-      "independent-tool",
-    ]);
+    expect(tools.snapshot().map((entry) => entry.id)).toEqual(["independent-tool"]);
     expect(sessions.snapshot().activeSessionId).toBe("session-a");
     expect(composer.snapshot()).toMatchObject({
       available: false,

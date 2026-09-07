@@ -17,6 +17,26 @@ describe("update metadata", () => {
     });
   });
 
+  it("converts the HTML returned by electron-updater into readable release notes", () => {
+    expect(toUpdateMetadata({
+      version: "2.0.0",
+      releaseNotes: [
+        "<p>• First change<br>• Second &amp; safer change</p>",
+        "<p>Requires Termco 2.0 or newer.</p>",
+      ].join(""),
+    }, "1.0.0")).toEqual({
+      available: true,
+      version: "2.0.0",
+      currentVersion: "1.0.0",
+      body: [
+        "• First change",
+        "• Second & safer change",
+        "",
+        "Requires Termco 2.0 or newer.",
+      ].join("\n"),
+    });
+  });
+
   it("does not expose structured release notes through the string contract", () => {
     expect(toUpdateMetadata({ version: "2.0.0", releaseNotes: [{ note: "x" }] }, "1.0.0")).toEqual({
       available: true,

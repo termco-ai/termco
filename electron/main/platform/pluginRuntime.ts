@@ -466,8 +466,22 @@ interface PluginPaths {
   pluginReleaseConfigurationFile: string;
 }
 
+export function pluginPlatformUserRoot(
+  userDataRoot: string,
+  packaged: boolean,
+): string {
+  return join(
+    userDataRoot,
+    packaged ? "plugin-platform" : "plugin-platform-development",
+  );
+}
+
 function roots(): PluginPaths {
-  const userRoot = join(app.getPath("userData"), "plugin-platform");
+  // Development must not load profiles installed by the packaged app. Apart
+  // from causing the shipped `termco.default` template to collide with the
+  // installed profile of the same id, that would make local source changes
+  // appear to be ignored in favour of an older downloaded plugin release.
+  const userRoot = pluginPlatformUserRoot(app.getPath("userData"), app.isPackaged);
   if (app.isPackaged) {
     const repositoryRoot = join(process.resourcesPath, "plugin-platform");
     return {

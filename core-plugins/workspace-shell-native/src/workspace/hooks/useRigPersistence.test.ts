@@ -208,3 +208,35 @@ describe("useRigPersistence", () => {
     );
   });
 });
+
+it.each(["move", "close"])("clears the old saved layout after the final tab %s", (action) => {
+  const initial: Params = { tabs: [term(1, "a")], activeId: 1, activeRigId: "a", enabled: true };
+  const { rerender } = mount(initial);
+  vi.advanceTimersByTime(DEBOUNCE_MS);
+  rerender({ ...initial, tabs: action === "move" ? [term(1, "b")] : [], activeRigId: "b" });
+  vi.advanceTimersByTime(DEBOUNCE_MS);
+  const writes = vi.mocked(tabsProvider.saveLayout).mock.calls.filter(([layout]) => layout.rigId === "a");
+  expect(writes.at(-1)?.[0]).toEqual({ rigId: "a", tabs: [], activeTabIndex: 0, splitTabIndex: -1 });
+});
+
+it("does not resurrect the saved layout of a deleted rig", () => {
+  let rigIds = ["a"];
+  const rigs = { snapshot: () => ({ rigs: rigIds.map((id) => ({ id })) }) };
+  const { rerender } = renderHook(({ tabs }: { tabs: Tab[] }) => useRigPersistence({
+    tabs, activeId: 1, splitTabId: 0, activeRigId: "a", enabled: true,
+    workspaceTabs: tabsProvider, rigs: rigs as never,
+  }), { initialProps: { tabs: [term(1, "a")] } });
+  vi.advanceTimersByTime(DEBOUNCE_MS);
+  vi.mocked(tabsProvider.saveLayout).mockClear();
+  rigIds = [];
+  rerender({ tabs: [] });
+  vi.advanceTimersByTime(DEBOUNCE_MS);
+  expect(tabsProvider.saveLayout).not.toHaveBeenCalled();
+});
+
+it("keeps unvisited saved layouts until their tabs have been loaded", () => {
+  vi.mocked(tabsProvider.savedLayouts).mockReturnValue([{ rigId: "offline", tabs: [{ kind: "terminal" }], activeTabIndex: 0, splitTabIndex: -1 }]);
+  mount({ tabs: [term(1, "a")], activeId: 1, activeRigId: "a", enabled: true });
+  vi.advanceTimersByTime(DEBOUNCE_MS);
+  expect(vi.mocked(tabsProvider.saveLayout).mock.calls.map(([layout]) => layout.rigId)).toEqual(["a"]);
+});

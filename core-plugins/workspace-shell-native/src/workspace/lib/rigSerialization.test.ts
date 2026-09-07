@@ -2,11 +2,7 @@
 import type { Tab } from "../tabs";
 import type { PaneNode } from "../tabs/lib/panes";
 import { describe, expect, it } from "vitest";
-import {
-  hydrateTabs,
-  type SerializedTab,
-  serializeTabs,
-} from "./rigSerialization";
+import { hydrateTabs, type SerializedTab, serializeTabs } from "./rigSerialization";
 
 function counter(start = 100): () => number {
   let n = start;
@@ -56,6 +52,22 @@ describe("serializeTabs", () => {
     ];
     const out = serializeTabs(tabs);
     expect(out.map((t) => t.kind)).toEqual(["terminal", "editor"]);
+  });
+
+  it("does not persist a plugin tab that opts out of restart restore", () => {
+    const tabs: Tab[] = [
+      {
+        id: 5,
+        kind: "plugin:forge-review",
+        rigId: "s1",
+        title: "MR #42",
+        restoreOnRestart: false,
+        data: { number: 42 },
+      },
+      term({ id: 6 }),
+    ];
+
+    expect(serializeTabs(tabs).map((tab) => tab.kind)).toEqual(["terminal"]);
   });
 
   it("marks the active leaf in a split tree", () => {
@@ -142,9 +154,7 @@ describe("hydrateTabs", () => {
 
   it("returns empty for corrupted input without throwing", () => {
     expect(hydrateTabs([] as SerializedTab[], "s1", counter())).toEqual([]);
-    expect(
-      hydrateTabs(null as unknown as SerializedTab[], "s1", counter()),
-    ).toEqual([]);
+    expect(hydrateTabs(null as unknown as SerializedTab[], "s1", counter())).toEqual([]);
   });
 
   it("collapses degenerate splits while hydrating", () => {
@@ -194,11 +204,7 @@ describe("hydrateTabs", () => {
   });
 
   it("skips serialized entries of unknown kind", () => {
-    const out = hydrateTabs(
-      [{ kind: "mystery" } as unknown as SerializedTab],
-      "s1",
-      counter(),
-    );
+    const out = hydrateTabs([{ kind: "mystery" } as unknown as SerializedTab], "s1", counter());
     expect(out).toEqual([]);
   });
 
@@ -210,11 +216,7 @@ describe("hydrateTabs", () => {
     ];
     const out = hydrateTabs(serialized, "s1", counter());
     expect(out.every((t) => t.cold === true)).toBe(true);
-    expect(out.map((t) => t.title)).toEqual([
-      "foo.ts",
-      "localhost:5173",
-      "README.md",
-    ]);
+    expect(out.map((t) => t.title)).toEqual(["foo.ts", "localhost:5173", "README.md"]);
   });
 
   it("round-trips plugin tabs (kind + title + data) and keeps unknown kinds out without crashing", () => {
@@ -237,10 +239,7 @@ describe("hydrateTabs", () => {
 
     // Restore works even when the owning plugin is absent (the SurfaceHost
     // placeholder covers rendering); a non-plugin unknown kind is skipped.
-    const withUnknown = [
-      ...serialized,
-      { kind: "who-knows" } as unknown as SerializedTab,
-    ];
+    const withUnknown = [...serialized, { kind: "who-knows" } as unknown as SerializedTab];
     const out = hydrateTabs(withUnknown, "s1", counter());
     expect(out.map((t) => t.kind)).toEqual(["plugin:demo:notes", "terminal"]);
     expect(out[0]).toMatchObject({

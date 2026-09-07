@@ -93,6 +93,8 @@ import explorerSidebar from "../../plugin-repository/plugins/explorer-sidebar/sr
 import { explorerRuntime } from "../../plugin-repository/plugins/explorer-sidebar/src/runtime";
 import fileIconsNative from "../../plugin-repository/plugins/file-icons-native/src/plugin";
 import filesNative from "../../plugin-repository/plugins/files-native/src/main";
+import forgeReviewsMain from "../../plugin-repository/plugins/forge-reviews-native/src/main";
+import forgeReviewsRenderer from "../../plugin-repository/plugins/forge-reviews-native/src/renderer";
 import { workspaceRuntimeActive as filesWorkspaceRuntimeActive } from "../../plugin-repository/plugins/files-native/src/runtime";
 import generalSettings from "../../plugin-repository/plugins/general-settings/src/renderer";
 import gitNative from "../../plugin-repository/plugins/git-native/src/main";
@@ -238,16 +240,20 @@ vi.mock("node-pty", () => ({
   spawn: () => {
     privilegedResources.ptys += 1;
     let killed = false;
+    let onExit: ((event: { exitCode: number }) => void) | undefined;
     return {
       pid: 1,
       onData: () => {},
-      onExit: () => {},
+      onExit: (listener: (event: { exitCode: number }) => void) => {
+        onExit = listener;
+      },
       write: () => {},
       resize: () => {},
       kill: () => {
         if (killed) return;
         killed = true;
         privilegedResources.ptys -= 1;
+        queueMicrotask(() => onExit?.({ exitCode: 0 }));
       },
     };
   },
@@ -841,6 +847,16 @@ const subjects: Subject[] = [
     },
   },
   {
+    pluginId: "forge-reviews-native",
+    process: "main",
+    module: forgeReviewsMain,
+  },
+  {
+    pluginId: "forge-reviews-native",
+    process: "renderer",
+    module: forgeReviewsRenderer,
+  },
+  {
     pluginId: "skills-panel-native",
     process: "renderer",
     module: skillsPanelNative,
@@ -1136,6 +1152,7 @@ const registryFixtureServices = new Set([
   "ui.ai-dock.views",
   "ui.overlays",
   "ui.background.tasks",
+  "source-control.sections",
   "ai.tools",
   "ai.toolsets",
   "ai.live-contributions",

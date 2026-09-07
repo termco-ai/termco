@@ -33,6 +33,17 @@ Public service contracts come from their owning `*-base` package. Import
 primitives from `@termco/ui`. Import another plugin's contract package, never
 its source files.
 
+### AI tool discovery
+
+An `ai.tools` contribution may provide `discovery` metadata alongside its
+group and builder. Keep `summary` to one short outcome-oriented sentence; it is
+shown in the model's compact capability index while the full tool schemas stay
+deferred. Use `activationPhrases` only for unambiguous user wording, keyed by an
+exact tool name produced by that contribution. Matching phrases expose that
+schema for the first model step but never execute the tool. Contributions
+without this metadata remain searchable through their tool names and
+descriptions.
+
 ### Floating UI above native browser surfaces
 
 Renderer plugins that use the shared `@termco/ui` dialog, alert-dialog, sheet,

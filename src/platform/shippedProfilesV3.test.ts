@@ -74,6 +74,7 @@ const foundationIds = [
   "search-sidebar",
   "explorer-sidebar",
   "source-control-sidebar",
+  "forge-reviews-native",
   "ports-sidebar",
   "header-native",
   "command-palette-state-native",

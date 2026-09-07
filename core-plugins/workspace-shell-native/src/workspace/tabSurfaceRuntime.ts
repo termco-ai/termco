@@ -15,11 +15,7 @@ import type {
   WorkspaceTabRecord,
   WorkspaceTabsCapability,
 } from "@termco/workspace-base";
-import {
-  manualOverlayOpen,
-  openOverlayRects,
-  subscribeOverlays,
-} from "@termco/ui";
+import { manualOverlayOpen, openOverlayRects, subscribeOverlays } from "@termco/ui";
 
 export type ReplaceSearchRegistration = (dispose: () => void) => void;
 
@@ -42,6 +38,7 @@ export function tabDescriptor(tab: WorkspaceTabRecord): UiTabDescriptor {
     kind: tab.kind,
     title: tab.title,
     cold: Boolean(tab.cold),
+    ...(tab.restoreOnRestart === undefined ? {} : { restoreOnRestart: tab.restoreOnRestart }),
     ...(typeof data.path === "string" ? { path: data.path } : {}),
     ...(typeof data.url === "string" ? { url: data.url } : {}),
     data,
@@ -68,7 +65,7 @@ function patchTab(
     if (tab.id !== id) return tab;
     const data = { ...(tab.data ?? {}), ...patch };
     if (tab.kind === "editor" && patch.dirty === true) data.preview = false;
-    for (const key of ["id", "rigId", "kind", "title", "cold", "data"]) {
+    for (const key of ["id", "rigId", "kind", "title", "cold", "restoreOnRestart", "data"]) {
       delete data[key];
     }
     return {
@@ -77,6 +74,9 @@ function patchTab(
       ...(typeof patch.kind === "string" ? { kind: patch.kind } : {}),
       ...(typeof patch.title === "string" ? { title: patch.title } : {}),
       ...(typeof patch.cold === "boolean" ? { cold: patch.cold } : {}),
+      ...(typeof patch.restoreOnRestart === "boolean"
+        ? { restoreOnRestart: patch.restoreOnRestart }
+        : {}),
       data,
     };
   });
@@ -87,10 +87,7 @@ function patchTab(
   return true;
 }
 
-function replaceTab(
-  tabs: WorkspaceTabsCapability,
-  next: UiTabDescriptor,
-): boolean {
+function replaceTab(tabs: WorkspaceTabsCapability, next: UiTabDescriptor): boolean {
   const snapshot = tabs.snapshot();
   if (!snapshot.tabs.some((tab) => tab.id === next.id)) return false;
   const replacement: WorkspaceTabRecord = {
@@ -99,6 +96,7 @@ function replaceTab(
     kind: next.kind,
     title: next.title,
     cold: next.cold,
+    ...(next.restoreOnRestart === undefined ? {} : { restoreOnRestart: next.restoreOnRestart }),
     data: {
       ...(next.data ?? {}),
       ...(next.path === undefined ? {} : { path: next.path }),
@@ -111,27 +109,16 @@ function replaceTab(
   return true;
 }
 
-const findTargets = new WeakMap<
-  UiTabSearchHandle,
-  Map<string, UiHeaderFindTarget>
->();
+const findTargets = new WeakMap<UiTabSearchHandle, Map<string, UiHeaderFindTarget>>();
 
-function findTarget(
-  kind: string,
-  handle: UiTabSearchHandle,
-): UiHeaderFindTarget {
+function findTarget(kind: string, handle: UiTabSearchHandle): UiHeaderFindTarget {
   const targetKind =
-    kind === "terminal"
-      ? "terminal"
-      : kind === "editor"
-        ? "editor"
-        : "git-history";
+    kind === "terminal" ? "terminal" : kind === "editor" ? "editor" : "git-history";
   const cached = findTargets.get(handle)?.get(targetKind);
   if (cached) return cached;
   const target: UiHeaderFindTarget = {
     kind: targetKind,
-    findNext: (query, options) =>
-      handle.findNext?.(query, options) ?? handle.setQuery(query),
+    findNext: (query, options) => handle.findNext?.(query, options) ?? handle.setQuery(query),
     findPrevious: (query, options) =>
       handle.findPrevious?.(query, options) ?? handle.setQuery(query),
     clear: handle.clearQuery,
@@ -221,10 +208,8 @@ export function createTabSurfaceRuntime(
 
   return {
     workspace,
-    workspaceForRig: (rigId) =>
-      rigs.find((rig) => rig.id === rigId)?.workspace ?? workspace,
-    rootPathForRig: (rigId) =>
-      rigs.find((rig) => rig.id === rigId)?.root ?? null,
+    workspaceForRig: (rigId) => rigs.find((rig) => rig.id === rigId)?.workspace ?? workspace,
+    rootPathForRig: (rigId) => rigs.find((rig) => rig.id === rigId)?.root ?? null,
     allTabs: () => workspaceTabs.snapshot().tabs.map(tabDescriptor),
     activeTabId: (rigId) => {
       const snapshot = workspaceTabs.snapshot();
@@ -272,11 +257,8 @@ export function createTabSurfaceRuntime(
         return;
       }
       const kind =
-        workspaceTabs.snapshot().tabs.find((tab) => tab.id === surfaceActiveId)
-          ?.kind ?? "";
-      replaceSearchRegistration(
-        surfaceSearch.register(surfaceActiveId, findTarget(kind, handle)),
-      );
+        workspaceTabs.snapshot().tabs.find((tab) => tab.id === surfaceActiveId)?.kind ?? "";
+      replaceSearchRegistration(surfaceSearch.register(surfaceActiveId, findTarget(kind, handle)));
     },
     subscribeOverlays,
     overlayRects: () =>
@@ -288,8 +270,7 @@ export function createTabSurfaceRuntime(
       })),
     hasUnpositionedOverlay: manualOverlayOpen,
     canAttachImageToAi: () => true,
-    attachSelectionToAi: (text, source) =>
-      aiSessions.attachSelection(text, source),
+    attachSelectionToAi: (text, source) => aiSessions.attachSelection(text, source),
     attachImageToAi: (input) => aiSessions.attachImage(input),
   };
 }

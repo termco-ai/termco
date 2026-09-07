@@ -29,7 +29,12 @@ function fail(message) {
 async function packageDirectories() {
   const entries = await fs.readdir(pluginsRoot, { withFileTypes: true });
   return entries
-    .filter((entry) => entry.isDirectory() && entry.name.startsWith("ui-") && entry.name.endsWith("-base"))
+    .filter((entry) =>
+      entry.isDirectory() && (
+        (entry.name.startsWith("ui-") && entry.name.endsWith("-base")) ||
+        entry.name === "git-base"
+      )
+    )
     .map((entry) => join(pluginsRoot, entry.name))
     .sort();
 }
@@ -120,6 +125,7 @@ for (const directory of directories) {
 descriptors.sort((left, right) => left.service.localeCompare(right.service));
 const byService = new Map();
 const describedRegistries = new Set();
+const describedUiRegistries = new Set();
 for (const descriptor of descriptors) {
   if (byService.has(descriptor.service)) {
     fail(`service ${descriptor.service} is described more than once`);
@@ -129,13 +135,16 @@ for (const descriptor of descriptors) {
     fail(`registry ${descriptor.registryType} is described more than once`);
   }
   describedRegistries.add(descriptor.registryType);
+  if (descriptor.registryType.startsWith("Ui")) {
+    describedUiRegistries.add(descriptor.registryType);
+  }
 }
 for (const [registry, sourceFile] of discoveredRegistries) {
   if (!describedRegistries.has(registry)) {
     fail(`${sourceFile} exports authoring registry ${registry} without plugin-authoring.json metadata`);
   }
 }
-for (const registry of describedRegistries) {
+for (const registry of describedUiRegistries) {
   if (!discoveredRegistries.has(registry)) {
     fail(`descriptor references ${registry}, but no matching UI registry exists`);
   }
