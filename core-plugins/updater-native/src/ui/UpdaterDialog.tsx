@@ -213,7 +213,7 @@ export function createUpdaterDialog(
               </div>
               <ui.Progress
                 value={pluginInstalling ? pluginProgressValue : progress ?? undefined}
-                className={progress === null && !pluginInstalling ? "animate-pulse" : undefined}
+                aria-label={pluginInstalling ? "Plugin update progress" : "Download progress"}
               />
             </div>
           ) : null}

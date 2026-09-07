@@ -5,5 +5,5 @@ export type { ManualUpdateInfo };
 
 export type UpdaterProgressEvent =
   | { event: "Started"; data?: { contentLength?: number } }
-  | { event: "Progress"; data: { chunkLength: number } }
+  | { event: "Progress"; data: { chunkLength: number; contentLength?: number } }
   | { event: "Finished" };

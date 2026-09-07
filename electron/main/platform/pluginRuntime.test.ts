@@ -1,3 +1,5 @@
+import { CapabilityRuntime, kernelEventsService } from "../../../src/platform/runtime";
+import { resolvePluginTree } from "../../../src/platform/resolve";
 import type { ProfilePluginRowV3 } from "../../../src/platform/contracts";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -19,6 +21,7 @@ vi.mock("electron", () => ({
   webContents: { fromId: vi.fn() },
 }));
 
+let reportPluginReleaseProgress: typeof import("./pluginRuntime").reportPluginReleaseProgress;
 let replaceProfileRow: typeof import("./pluginRuntime").replaceProfileRow;
 let releaseReplacementProfileRows: typeof import("./pluginRuntime").releaseReplacementProfileRows;
 let mergeGeneratedUserProfileDefaults: typeof import("./pluginRuntime").mergeGeneratedUserProfileDefaults;
@@ -38,6 +41,7 @@ let pluginPlatformUserRoot: typeof import("./pluginRuntime").pluginPlatformUserR
 
 beforeAll(async () => {
   ({
+    reportPluginReleaseProgress,
     replaceProfileRow,
     releaseReplacementProfileRows,
     mergeGeneratedUserProfileDefaults,
@@ -684,5 +688,25 @@ describe("live plugin profile rows", () => {
       original,
       neighbor,
     ]);
+  });
+});
+
+
+describe("plugin release progress delivery", () => {
+  it("reaches the application event bus used by the renderer bridge", async () => {
+    const runtime = new CapabilityRuntime(resolvePluginTree({
+      profile: { schemaVersion: 3, id: "test", bundles: [], plugins: [], patches: [] },
+      manifests: new Map(),
+    }));
+    const listener = vi.fn();
+    const unsubscribe = await runtime.callCapability(kernelEventsService, "subscribeAll", [listener]) as () => void;
+    const progress = { stage: "downloading" as const, completed: 50, total: 100, downloadedBytes: 50, totalBytes: 100 };
+    try {
+      await reportPluginReleaseProgress(runtime, progress);
+      expect(listener).toHaveBeenCalledWith("updater://plugin-progress", progress);
+    } finally {
+      unsubscribe();
+      await runtime.disposeAll();
+    }
   });
 });

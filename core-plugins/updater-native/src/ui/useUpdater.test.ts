@@ -236,15 +236,14 @@ describe("source-owned updater state", () => {
     });
     act(() => events.emit("updater://progress", {
       event: "Started",
-      data: { contentLength: 100 },
     }));
     act(() => events.emit("updater://progress", {
       event: "Progress",
-      data: { chunkLength: 40 },
+      data: { contentLength: 100, chunkLength: 40 },
     }));
     act(() => events.emit("updater://progress", {
       event: "Progress",
-      data: { chunkLength: 25 },
+      data: { contentLength: 100, chunkLength: 25 },
     }));
     expect(result.current.status).toEqual({
       kind: "downloading",

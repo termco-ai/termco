@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 import {
   APPLICATION_BOOT_DIAGNOSTICS_SERVICE,
   type BootDiagnostic,
+  type PluginUpdateProgress,
 } from "../../../plugin-repository/plugins/application-base/src/index";
 import { prepareProfileProcess, type PreparedProfileProcess } from "../../../src/platform/bootstrap";
 import type {
@@ -88,7 +89,8 @@ import {
   validateProfileDefaults,
   writeParsedProfilePackage,
 } from "./profilePackage";
-import { broadcastEvent, windowForSender } from "../windows";
+import { windowForSender } from "../windows";
+import { kernelEventsService } from "../../../src/platform/runtime";
 
 let active: PreparedProfileProcess | null = null;
 let ipcHost: CapabilityIpcHost | null = null;
@@ -593,6 +595,20 @@ export function installInitialPluginBootstrap(
   return initialBootstrapOperation;
 }
 
+export async function reportPluginReleaseProgress(
+  runtime: PreparedProfileProcess["runtime"] | undefined,
+  progress: PluginUpdateProgress,
+): Promise<void> {
+  try {
+    await runtime?.callCapability(kernelEventsService, "emit", [
+      "updater://plugin-progress",
+      progress,
+    ]);
+  } catch (error) {
+    console.warn(`[plugins] update progress delivery failed: ${String(error)}`);
+  }
+}
+
 async function createPluginReleaseManager(
   paths: PluginPaths,
 ): Promise<PluginReleaseManager> {
@@ -633,7 +649,7 @@ async function createPluginReleaseManager(
       },
     },
     onProgress: (progress) =>
-      broadcastEvent("updater://plugin-progress", progress),
+      reportPluginReleaseProgress(active?.runtime, progress),
   });
 }
 

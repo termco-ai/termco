@@ -20,9 +20,11 @@ describe("Progress", () => {
     expect(indicator(container).style.transform).toBe("translateX(-70%)");
   });
 
-  it("treats a missing value as zero progress", () => {
+  it("shows a visible indeterminate indicator when the total is unknown", () => {
     const { container } = render(<Progress />);
-    expect(indicator(container).style.transform).toBe("translateX(-100%)");
+    expect(indicator(container).style.transform).not.toBe("translateX(-100%)");
+    expect(indicator(container)).toHaveClass("animate-pulse");
+    expect(container.querySelector("[role=progressbar]")).not.toHaveAttribute("aria-valuenow");
   });
 
   it("fills completely at 100", () => {

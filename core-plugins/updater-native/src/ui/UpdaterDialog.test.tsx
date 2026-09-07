@@ -3,6 +3,7 @@ import type { ApplicationUpdateStateCapability } from "@termco/application-base"
 import type { DesktopIntegrationCapability } from "@termco/desktop-base";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { toUpdateMetadata } from "../metadata";
 import { createUpdaterDialog } from "./UpdaterDialog";
 import type { UpdaterStatus } from "./types";
 
@@ -84,6 +85,21 @@ describe("UpdaterDialog", () => {
     expect(state.dismiss).toHaveBeenCalled();
   });
 
+  it("renders GitHub HTML notes as readable lines without visible tags", () => {
+    state.status = {
+      kind: "available",
+      update: toUpdateMetadata({
+        version: "0.9.9",
+        releaseNotes: "<p>• Added Reviews<br>• Save SSH passwords &amp; passphrases</p><p>Requires Termco 0.9.9.</p>",
+      }, "0.9.8")!,
+    };
+    render(<UpdaterDialog />);
+    fireEvent.click(screen.getByText("Review"));
+    const content = screen.getByTestId("application-release-content");
+    expect(content.textContent).toContain("• Added Reviews\n• Save SSH passwords & passphrases\n\nRequires Termco 0.9.9.");
+    expect(content.textContent).not.toMatch(/<\/?(?:p|br)>|&amp;/);
+  });
+
   it("falls back to the established generic release description", () => {
     state.status = {
       kind: "available",
@@ -110,7 +126,12 @@ describe("UpdaterDialog", () => {
     const first = render(<UpdaterDialog />);
     expect(screen.getByText("Downloading update…")).toBeDefined();
     expect(screen.getByText("50% — 512 B")).toBeDefined();
-    expect(document.querySelector("[data-slot=progress]")).not.toBeNull();
+    expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("50");
+    expect((document.querySelector("[data-slot=progress-indicator]") as HTMLElement).style.transform).toBe("translateX(-50%)");
+    state.status = { kind: "downloading", downloaded: 768, contentLength: 1024 };
+    first.rerender(<UpdaterDialog />);
+    expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("75");
+    expect((document.querySelector("[data-slot=progress-indicator]") as HTMLElement).style.transform).toBe("translateX(-25%)");
     first.unmount();
 
     state.status = {
@@ -270,7 +291,18 @@ describe("UpdaterDialog", () => {
         pluginName: "Preview Surface",
       },
     };
-    render(<UpdaterDialog />);
+    const view = render(<UpdaterDialog />);
+    const installing = state.status;
+    state.status = { ...installing, progress: undefined };
+    view.rerender(<UpdaterDialog />);
+    expect(screen.getByText("Starting the signed update…")).toBeDefined();
+    expect((document.querySelector("[data-slot=progress-indicator]") as HTMLElement).style.transform).not.toBe("translateX(-100%)");
+    state.status = { ...installing, progress: { stage: "downloading", completed: 50, total: 100, downloadedBytes: 50, totalBytes: 100 } };
+    view.rerender(<UpdaterDialog />);
+    expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("50");
+    expect((document.querySelector("[data-slot=progress-indicator]") as HTMLElement).style.transform).toBe("translateX(-50%)");
+    state.status = installing;
+    view.rerender(<UpdaterDialog />);
     expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("0");
     expect(screen.getByText("Preparing Preview Surface (1 of 1)"))
       .toBeDefined();

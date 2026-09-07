@@ -189,12 +189,14 @@ export function createUpdaterState(
           const event = payload as UpdaterProgressEvent;
           if (event.event === "Started") {
             total = event.data?.contentLength ?? null;
+            downloaded = 0;
             publish({
               kind: "downloading",
               downloaded: 0,
               contentLength: total,
             });
           } else if (event.event === "Progress") {
+            total = event.data.contentLength ?? total;
             downloaded += event.data.chunkLength;
             publish({
               kind: "downloading",
