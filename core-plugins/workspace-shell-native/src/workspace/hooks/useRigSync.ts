@@ -17,6 +17,8 @@ type Params = Pick<
   | "tabs"
   | "activeId"
   | "splitTabId"
+  | "splitDirection"
+  | "splitPlacement"
   | "setSplit"
   | "allocId"
   | "replaceTabs"
@@ -46,6 +48,8 @@ export function useRigSync({
   tabs,
   activeId,
   splitTabId,
+  splitDirection,
+  splitPlacement,
   setSplit,
   allocId,
   replaceTabs,
@@ -84,6 +88,8 @@ export function useRigSync({
     tabs,
     activeId,
     splitTabId,
+    splitDirection,
+    splitPlacement,
     activeRigId: activeRigId ?? DEFAULT_RIG_ID,
     enabled: rigsHydrated,
     rigs,

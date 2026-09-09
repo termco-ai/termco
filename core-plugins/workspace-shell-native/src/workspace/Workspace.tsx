@@ -127,6 +127,8 @@ export default function Workspace({
     activeId,
     setActiveId,
     splitTabId,
+    splitDirection,
+    splitPlacement,
     focusedPane,
     setFocusedPane,
     setSplit,
@@ -223,6 +225,8 @@ export default function Workspace({
     tabs,
     activeId,
     splitTabId,
+    splitDirection,
+    splitPlacement,
     setSplit,
     allocId,
     replaceTabs,
@@ -451,7 +455,7 @@ export default function Workspace({
     closeActivePane,
     setActiveId,
     focusPane,
-    activeId,
+    activeId: focusActiveId,
     tabsRef,
     handleClose,
     rigs: runtime.rigs,
@@ -480,7 +484,7 @@ export default function Workspace({
   useAppShortcuts({
     selectByIndex,
     focusNextPaneInTab,
-    activeId,
+    activeId: focusActiveId,
     activeRigId,
     activeTab,
     openNewTab: newTabInPane,
@@ -539,9 +543,12 @@ export default function Workspace({
   useWorkspaceCoreCommands(
     {
       tabs,
-      activeId,
+      activeId: focusActiveId,
       searchTarget,
       openNewTab: newTabInPane,
+      openTerminalBelow: runtime.tabActions.newTerminalBelow
+        ? () => { runtime.tabActions.newTerminalBelow?.(focusActiveId); }
+        : undefined,
       closeActiveTabOrPane: handleCloseTabOrPane,
       splitPaneRight: () => splitActivePaneInActiveTab("row"),
       splitPaneDown: () => splitActivePaneInActiveTab("col"),
@@ -651,14 +658,22 @@ export default function Workspace({
         // Split (right) pane + focus wiring.
         splitTab,
         splitTabId,
+        splitDirection,
+        splitPlacement,
         focusedPane,
         onFocusPane: setFocusedPane,
+        onDockPane: (pane, direction, placement) => {
+          if (!splitTab) return;
+          // Move the existing hosts, preserving editor buffers and sessions.
+          setSplit(splitTabId, direction, pane === "right" ? placement
+            : placement === "before" ? "after" : "before");
+          setFocusedPane(pane);
+        },
         // Closing a pane collapses the split and keeps the OTHER tab: closing
         // the left pane promotes the split (right) tab to the sole active tab;
         // closing the right pane just drops the split (left stays active).
         onClosePane: (pane: "left" | "right") => {
-          if (pane === "left") setActiveId(splitTabId);
-          closeSplit();
+          closeSplit(pane === "left" ? splitTabId : undefined);
         },
       }}
       overlays={{

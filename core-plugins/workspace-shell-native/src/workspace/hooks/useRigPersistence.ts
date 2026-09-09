@@ -9,6 +9,8 @@ type Snapshot = {
   tabs: Tab[];
   activeId: number;
   splitTabId: number;
+  splitDirection?: "horizontal" | "vertical";
+  splitPlacement?: "before" | "after";
   activeRigId: string;
 };
 
@@ -22,12 +24,16 @@ type LastWrite = {
   json: string;
   activeTabIndex: number;
   splitTabIndex: number;
+  splitDirection?: "horizontal" | "vertical";
+  splitPlacement?: "before" | "after";
 };
 
 export function useRigPersistence({
   tabs,
   activeId,
   splitTabId,
+  splitDirection,
+  splitPlacement,
   activeRigId,
   enabled,
   workspaceTabs,
@@ -39,8 +45,8 @@ export function useRigPersistence({
   const observedRigs = useRef(new Set<string>());
   if (enabled) for (const tab of tabs) observedRigs.current.add(tab.rigId);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latest = useRef<Snapshot>({ tabs, activeId, splitTabId, activeRigId });
-  latest.current = { tabs, activeId, splitTabId, activeRigId };
+  const latest = useRef<Snapshot>({ tabs, activeId, splitTabId, splitDirection, splitPlacement, activeRigId });
+  latest.current = { tabs, activeId, splitTabId, splitDirection, splitPlacement, activeRigId };
 
   if (enabled && !seeded.current) {
     seeded.current = true;
@@ -49,6 +55,8 @@ export function useRigPersistence({
         json: JSON.stringify(layout.tabs),
         activeTabIndex: layout.activeTabIndex,
         splitTabIndex: layout.splitTabIndex,
+        splitDirection: layout.splitDirection,
+        splitPlacement: layout.splitPlacement,
       });
     }
   }
@@ -75,7 +83,11 @@ export function useRigPersistence({
         const previous = last.current.get(rigId);
         let activeTabIndex = previous?.activeTabIndex ?? 0;
         let splitTabIndex = previous?.splitTabIndex ?? -1;
+        let savedDirection = previous?.splitDirection;
+        let savedPlacement = previous?.splitPlacement;
         if (rigId === snapshot.activeRigId) {
+          savedDirection = snapshot.splitDirection;
+          savedPlacement = snapshot.splitPlacement;
           const serializable = group.filter(isSerializableTab);
           const activeIndex = serializable.findIndex(
             (tab) => tab.id === snapshot.activeId,
@@ -94,16 +106,20 @@ export function useRigPersistence({
           previous &&
           previous.json === json &&
           previous.activeTabIndex === activeTabIndex &&
-          previous.splitTabIndex === splitTabIndex
+          previous.splitTabIndex === splitTabIndex &&
+          (previous.splitDirection ?? "horizontal") === (savedDirection ?? "horizontal") &&
+          (previous.splitPlacement ?? "after") === (savedPlacement ?? "after")
         ) {
           continue;
         }
-        last.current.set(rigId, { json, activeTabIndex, splitTabIndex });
+        last.current.set(rigId, { json, activeTabIndex, splitTabIndex, splitDirection: savedDirection, splitPlacement: savedPlacement });
         void workspaceTabs.saveLayout({
           rigId,
           tabs: serialized,
           activeTabIndex,
           splitTabIndex,
+          ...(savedDirection ? { splitDirection: savedDirection } : {}),
+          ...(savedPlacement ? { splitPlacement: savedPlacement } : {}),
         });
       }
     },
@@ -112,7 +128,7 @@ export function useRigPersistence({
 
   useEffect(() => {
     if (!enabled) return;
-    const snapshot: Snapshot = { tabs, activeId, splitTabId, activeRigId };
+    const snapshot: Snapshot = { tabs, activeId, splitTabId, splitDirection, splitPlacement, activeRigId };
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       timer.current = null;
@@ -121,7 +137,7 @@ export function useRigPersistence({
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [tabs, activeId, splitTabId, activeRigId, enabled, flush]);
+  }, [tabs, activeId, splitTabId, splitDirection, splitPlacement, activeRigId, enabled, flush]);
 
   useEffect(() => {
     if (!enabled) return;

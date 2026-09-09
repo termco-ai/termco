@@ -902,6 +902,24 @@ describe("preview tabs", () => {
 });
 
 describe("split view", () => {
+  it("keeps a vertical split when replacing its tab and promotes the bottom pane on close", () => {
+    const { result } = mount();
+    let first = 0;
+    let second = 0;
+    act(() => {
+      first = result.current.newPreviewTab("http://a");
+      second = result.current.newPreviewTab("http://b");
+    });
+    act(() => result.current.setSplit(first, "vertical"));
+    expect(result.current.splitDirection).toBe("vertical");
+    act(() => result.current.setSplit(second));
+    expect(result.current.splitDirection).toBe("vertical");
+    act(() => result.current.closeSplit(second));
+    expect(result.current.splitTabId).toBe(0);
+    expect(result.current.activeId).toBe(second);
+    expect(result.current.tabs.some((tab) => tab.id === first)).toBe(true);
+  });
+
   it("setSplit opens a tab in the right pane; closeSplit clears it", () => {
     const { result } = mount();
     let a = 0;

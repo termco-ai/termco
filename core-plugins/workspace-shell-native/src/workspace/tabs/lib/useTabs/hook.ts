@@ -100,6 +100,8 @@ export function useTabs(
   const activeId = snapshot.activeId;
   const splitTabId = snapshot.splitTabId;
   const focusedPane = snapshot.focusedPane;
+  const splitDirection = snapshot.splitDirection ?? "horizontal";
+  const splitPlacement = snapshot.splitPlacement ?? "after";
   const activeRigIdRef = useRef(snapshot.activeRigIdForNewTabs);
   const tabsRef = useRef(tabs);
   const activeIdRef = useRef(activeId);
@@ -143,18 +145,6 @@ export function useTabs(
         activeId: resolved,
       });
       activeIdRef.current = workspaceTabs.snapshot().activeId;
-    },
-    [workspaceTabs],
-  );
-
-  const setSplitTabId = useCallback(
-    (next: SetStateAction<number>) => {
-      const current = workspaceTabs.snapshot().splitTabId;
-      const resolved = typeof next === "function" ? next(current) : next;
-      workspaceTabs.transition({
-        splitTabId: resolved,
-      });
-      splitTabIdRef.current = workspaceTabs.snapshot().splitTabId;
     },
     [workspaceTabs],
   );
@@ -523,19 +513,32 @@ export function useTabs(
     [syncProviderRefs, workspaceTabs],
   );
 
-  /** Open a tab in the second (split) pane, side-by-side with the active tab. If
-   * it's the active tab, move the active tab elsewhere so one tab is never in
-   * both panes. */
-  const setSplit = useCallback((id: number) => {
-    if (id === activeIdRef.current) {
-      const other = tabsRef.current.find((t) => t.id !== id && t.rigId === activeRigIdRef.current);
-      if (!other) return; // nothing else to show on the left — can't split
-      setActiveId(other.id);
-    }
-    setSplitTabId(id);
-  }, []);
+  /** Move a tab to the secondary pane in one transition, so it never
+   * occupies both panes even when splitting the currently active tab. */
+  const setSplit = useCallback((id: number, direction?: "horizontal" | "vertical", placement?: "before" | "after") => {
+    const current = workspaceTabs.snapshot();
+    const target = current.tabs.find((tab) => tab.id === id);
+    if (!target) return;
+    const primary = current.activeId === id
+      ? current.tabs.find((tab) => tab.id !== id && tab.rigId === target.rigId)?.id
+      : current.activeId;
+    if (!primary) return;
+    workspaceTabs.transition({
+      activeId: primary,
+      splitTabId: id,
+      ...(direction ? { splitDirection: direction } : {}),
+      ...(placement ? { splitPlacement: placement } : {}),
+    });
+    syncProviderRefs();
+  }, [workspaceTabs, syncProviderRefs]);
 
-  const closeSplit = useCallback(() => setSplitTabId(0), []);
+  const closeSplit = useCallback((keepId?: number) => {
+    workspaceTabs.transition({
+      splitTabId: 0,
+      ...(keepId === undefined ? {} : { activeId: keepId }),
+    });
+    syncProviderRefs();
+  }, [workspaceTabs, syncProviderRefs]);
 
   const updateTab = useCallback(
     (id: number, patch: TabPatch) => {
@@ -778,6 +781,8 @@ export function useTabs(
     setActiveId,
     splitTabId,
     focusedPane,
+    splitDirection,
+    splitPlacement,
     setFocusedPane,
     setSplit,
     closeSplit,

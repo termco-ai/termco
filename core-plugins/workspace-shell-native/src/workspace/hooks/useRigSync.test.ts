@@ -72,6 +72,8 @@ function setup(initial: Props, tabs: Tab[] = []) {
         tabs,
         activeId: props.activeId,
         splitTabId: 0,
+        splitDirection: "horizontal",
+        splitPlacement: "after",
         activeRigId: props.activeRigId,
         rigsHydrated: props.rigsHydrated,
         launchCwdResolved: true,

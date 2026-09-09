@@ -3,7 +3,7 @@
   "description": "A terminal-first, AI-native development workspace.",
   "author": "Termco AI",
   "private": true,
-  "version": "0.9.10",
+  "version": "0.9.11",
   "license": "Apache-2.0",
   "type": "module",
   "main": "dist-electron/main/index.cjs",

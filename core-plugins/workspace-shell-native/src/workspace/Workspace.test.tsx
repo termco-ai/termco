@@ -577,8 +577,8 @@ describe("header presentation read model", () => {
     it("closing the left pane promotes the split tab to the sole active tab", () => {
       renderApp(splitTabs(), 1, 2);
       act(() => shell().workspace.onClosePane?.("left"));
-      expect(h.tabsApi.setActiveId).toHaveBeenCalledWith(2);
-      expect(h.tabsApi.closeSplit).toHaveBeenCalled();
+      expect(h.tabsApi.closeSplit).toHaveBeenCalledWith(2);
+      expect(h.tabsApi.setActiveId).not.toHaveBeenCalled();
     });
 
     it("closing the right pane just drops the split (left stays active)", () => {

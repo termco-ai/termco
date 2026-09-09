@@ -17,7 +17,7 @@ export type RigsBootParams = {
   home: string | null;
   allocId: () => number;
   replaceTabs: (tabs: Tab[], activeId: number) => void;
-  setSplit: (tabId: number) => void;
+  setSplit: (tabId: number, direction?: "horizontal" | "vertical", placement?: "before" | "after") => void;
   markBooted: () => void;
   setActiveRigForNewTabs: (id: string) => void;
   adoptWorkspaceEnv: (env: WorkspaceEnv) => Promise<string | null>;
@@ -191,7 +191,10 @@ export async function runRigsBoot({
 
     const splitIndex = layouts.get(activeRigId)?.splitTabIndex ?? -1;
     const splitTab = splitIndex >= 0 ? activeTabs[splitIndex] : undefined;
-    if (splitTab && splitTab.id !== activeTab.id) setSplit(splitTab.id);
+    if (splitTab && splitTab.id !== activeTab.id) {
+      setSplit(splitTab.id, layouts.get(activeRigId)?.splitDirection ?? "horizontal",
+        layouts.get(activeRigId)?.splitPlacement ?? "after");
+    }
   } catch (error) {
     console.error("[termco] rigs boot failed:", error);
   } finally {

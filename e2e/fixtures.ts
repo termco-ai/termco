@@ -293,6 +293,24 @@ export const liveTest = test.extend({
   },
 });
 
+/** A configured, offline provider for chat UI tests. No inference is sent;
+ * readiness comes from a custom endpoint rather than a keychain sentinel. */
+export const configuredAiTest = test.extend({
+  workspace: async ({}, use) => {
+    const workspace = seedWorkspace();
+    seedCustomEndpoint(workspace, {
+      id: "ui-test", name: "UI test", baseURL: "http://127.0.0.1:9/v1", modelId: "ui-test-model",
+    });
+    await use(workspace);
+  },
+  page: async ({ page }, use) => {
+    await page.addLocatorHandler(page.getByTestId("onboarding-offer"), async (offer) => {
+      await offer.getByRole("button", { name: "Not now" }).click();
+    });
+    await use(page);
+  },
+});
+
 export { expect };
 
 /** Console/page errors are benign in a few known cases; everything else fails. */

@@ -196,6 +196,8 @@ export class WorkspaceTabsStore implements WorkspaceTabsCapability {
       activeId,
       splitTabId,
       focusedPane,
+      splitDirection: next.splitDirection ?? this.state.splitDirection ?? "horizontal",
+      splitPlacement: next.splitPlacement ?? this.state.splitPlacement ?? "after",
       booted,
       activeRigIdForNewTabs:
         next.activeRigIdForNewTabs ?? this.state.activeRigIdForNewTabs,

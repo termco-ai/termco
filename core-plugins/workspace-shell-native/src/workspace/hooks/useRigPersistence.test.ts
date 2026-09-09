@@ -41,6 +41,8 @@ type Params = {
   activeRigId: string;
   enabled: boolean;
   splitTabId?: number;
+  splitDirection?: "horizontal" | "vertical";
+  splitPlacement?: "before" | "after";
 };
 
 function mount(initial: Params) {
@@ -67,6 +69,22 @@ afterEach(() => {
 });
 
 describe("useRigPersistence", () => {
+  it("persists orientation changes even when the tab selection is unchanged", () => {
+    const params: Params = { tabs: [term(1, "a"), term(2, "a")], activeId: 1,
+      activeRigId: "a", splitTabId: 2, splitDirection: "vertical", enabled: true };
+    const { rerender } = mount(params);
+    vi.advanceTimersByTime(DEBOUNCE_MS);
+    expect(tabsProvider.saveLayout).toHaveBeenLastCalledWith(expect.objectContaining({ splitDirection: "vertical" }));
+    rerender({ ...params, splitDirection: "horizontal" });
+    vi.advanceTimersByTime(DEBOUNCE_MS);
+    expect(tabsProvider.saveLayout).toHaveBeenCalledTimes(2);
+    expect(tabsProvider.saveLayout).toHaveBeenLastCalledWith(expect.objectContaining({ splitDirection: "horizontal" }));
+    rerender({ ...params, splitDirection: "horizontal", splitPlacement: "before" });
+    vi.advanceTimersByTime(DEBOUNCE_MS);
+    expect(tabsProvider.saveLayout).toHaveBeenCalledTimes(3);
+    expect(tabsProvider.saveLayout).toHaveBeenLastCalledWith(expect.objectContaining({ splitPlacement: "before" }));
+  });
+
   it("writes nothing while disabled", () => {
     mount({
       tabs: [term(1, "a")],

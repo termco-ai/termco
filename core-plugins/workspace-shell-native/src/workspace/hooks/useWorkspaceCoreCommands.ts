@@ -24,6 +24,7 @@ export type WorkspaceCoreCommandParams = {
   activeId: number;
   searchTarget: UiHeaderFindTarget | null;
   openNewTab: () => void;
+  openTerminalBelow?: () => void;
   closeActiveTabOrPane: () => void;
   splitPaneRight: () => void;
   splitPaneDown: () => void;
@@ -83,6 +84,17 @@ function buildWorkspaceCoreItems(
       shortcutId: "tab.new",
       run: p.openNewTab,
     },
+    ...(p.openTerminalBelow ? [{
+      id: "terminal.openBelow",
+      title: "Open terminal below file",
+      description: "Keep the file visible above a new terminal in its directory.",
+      group: "Panes",
+      keywords: ["terminal", "file", "editor", "below", "bottom", "split"],
+      icon: TerminalIcon,
+      disabledReason: activeTab?.kind === "editor" || activeTab?.kind === "markdown"
+        ? undefined : "No file tab",
+      run: p.openTerminalBelow,
+    }] : []),
     {
       id: "tab.close",
       title: "Close tab or pane",

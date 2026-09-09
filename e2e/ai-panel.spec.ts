@@ -3,7 +3,7 @@
  * keyless user to Settings. When no provider is configured the chat shows an
  * inline "Connect provider" notice; reaching Settings takes an explicit click.
  */
-import { collectErrors, expect, test } from "./fixtures";
+import { collectErrors, expect, configuredAiTest as test } from "./fixtures";
 
 test("toggling AI opens the chat inline and never auto-opens Settings", async ({ app, page }) => {
   const before = app.windows().length;

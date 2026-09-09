@@ -224,6 +224,8 @@ describe("provider-owned restore", () => {
       ],
       activeTabIndex: 9,
       splitTabIndex: 1,
+      splitDirection: "vertical",
+      splitPlacement: "before",
     };
     const { calls, params } = makeParams({
       rigs: rigProvider([meta("a")], "a"),
@@ -232,7 +234,7 @@ describe("provider-owned restore", () => {
     await runRigsBoot(params);
     const [tabs, activeId] = calls.replaceTabs.mock.calls[0];
     expect(activeId).toBe(tabs[0].id);
-    expect(calls.setSplit).toHaveBeenCalledWith(tabs[1].id);
+    expect(calls.setSplit).toHaveBeenCalledWith(tabs[1].id, "vertical", "before");
   });
 
   it("always marks booted and reports provider failures", async () => {
