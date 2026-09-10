@@ -15,6 +15,26 @@ function normalizeWorkflowText(value: string): string {
 }
 
 describe("release workflow platform metadata", () => {
+  it("compiles the full development profile before the production composition gate", async () => {
+    const workflow = parse(await readFile(".github/workflows/application-release.yml", "utf8"));
+    const steps = workflow.jobs.build.steps;
+    const composition = steps.findIndex((step: { run?: string }) =>
+      step.run?.includes("playwright test e2e/ai-split-composition.spec.ts"),
+    );
+    expect(composition).toBeGreaterThan(0);
+    const prerequisite = steps.slice(0, composition + 1).findLast((step: { run?: string }) =>
+      step.run?.includes("pnpm build:plugins:all"),
+    );
+    expect(prerequisite).toBeDefined();
+    expect(prerequisite.if).toBe(steps[composition].if);
+    expect(steps[composition].if).toBe("matrix.id == 'macos-arm64'");
+    if (prerequisite === steps[composition]) {
+      expect(prerequisite.run.indexOf("pnpm build:plugins:all")).toBeLessThan(
+        prerequisite.run.indexOf("playwright test"),
+      );
+    }
+  });
+
   it("leaves the full CI workflow as an explicit manual action", async () => {
     const workflow = parse(await readFile(".github/workflows/ci.yml", "utf8"));
     expect(workflow.on).toEqual({ workflow_dispatch: null });

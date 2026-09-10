@@ -198,9 +198,10 @@ export const test = base.extend<{
     await use(seedWorkspace());
   },
 
-  app: async ({ workspace, layeredRenderer }, use) => {
-    const launch = () =>
-      electron.launch({
+  app: async ({ workspace, layeredRenderer }, use, testInfo) => {
+    let mainLogs = "";
+    const launch = async () => {
+      const application = await electron.launch({
         args: [MAIN, workspace.dir],
         env: {
           ...process.env,
@@ -216,20 +217,38 @@ export const test = base.extend<{
           VITE_DEV_SERVER_URL: "",
         },
       });
+      const collect = (chunk: Buffer) => {
+        mainLogs = (mainLogs + chunk.toString()).slice(-64_000);
+      };
+      application.process().stdout?.on("data", collect);
+      application.process().stderr?.on("data", collect);
+      return application;
+    };
     let app = await launch();
+    let started = false;
     try {
-      await app.firstWindow({ timeout: 20_000 });
-    } catch (firstError) {
-      // macOS occasionally starts Electron without presenting its first window
-      // after a long launch sweep. Dispose that exact process and retry once;
-      // otherwise one launch-service hiccup burns the entire 90-second test.
-      console.warn("[e2e] Electron presented no first window; retrying once", firstError);
+      try {
+        await app.firstWindow({ timeout: 20_000 });
+      } catch (firstError) {
+        // Dispose and retry this fixture-owned process after a macOS launch
+        // hiccup. Keep both attempts' main-process logs for startup failures.
+        console.warn("[e2e] Electron presented no first window; retrying once", firstError);
+        await closeElectronApp(app);
+        app = await launch();
+        try {
+          await app.firstWindow({ timeout: 30_000 });
+        } catch (error) {
+          throw new Error(`Electron did not open a window. Main-process logs:\n${mainLogs || "<none>"}`, { cause: error });
+        }
+      }
+      started = true;
+      await use(app);
+    } finally {
+      if (!started || testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach("electron-main.log", { body: mainLogs || "<none>", contentType: "text/plain" });
+      }
       await closeElectronApp(app);
-      app = await launch();
-      await app.firstWindow({ timeout: 30_000 });
     }
-    await use(app);
-    await closeElectronApp(app);
   },
 
   page: async ({ app, layeredRenderer }, use) => {

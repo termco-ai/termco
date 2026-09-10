@@ -96,7 +96,8 @@ test("rendered Markdown stays in its pane while the chat expands over a split wo
   await page.getByRole("menuitem", { name: "Open Terminal Below", exact: true }).click();
   const markdownPane = page.locator('[id="ws-left"]');
   const terminalPane = page.locator('[id="ws-right"]');
-  await expect(terminalPane.locator("[data-terminal-padding]:visible")).toContainText("%", { timeout: 20_000 });
+  // Any nonblank prompt proves the terminal rendered; CI may use bash or zsh.
+  await expect(terminalPane.locator("[data-terminal-padding]:visible")).toHaveText(/\S/, { timeout: 20_000 });
   await page.screenshot({ path: testInfo.outputPath("markdown-split.png") });
   await expect.soft(page.getByRole("button", { name: "Raw", exact: true })).toHaveCount(1, { timeout: 2000 });
   const heading = page.getByRole("heading", { name: "Termco E2E", exact: true });

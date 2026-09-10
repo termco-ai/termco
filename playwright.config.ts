@@ -1,7 +1,9 @@
 import { defineConfig } from "@playwright/test";
 
 // E2E drives the *real* built Electron app (dist/ + dist-electron/). Run `pnpm
-// build` first (the test:e2e script does this). Electron apps are launched one
+// build && pnpm build:plugins:all` first (the test:e2e script does this).
+// The unpackaged test profile includes feature plugins, while `build` compiles
+// only the application's bundled plugins. Electron apps are launched one
 // at a time — no parallelism across files — to avoid GPU/PTY resource contention.
 // macOS eventually stops presenting a first window when roughly eighty fresh
 // Electron apps are launched through one long-lived Playwright worker. Four

@@ -204,7 +204,18 @@ jobs:
 
       - name: Test production workspace composition
         if: matrix.id == 'macos-arm64'
-        run: pnpm exec playwright test e2e/ai-split-composition.spec.ts --retries=0
+        run: |
+          pnpm build:plugins:all
+          pnpm exec playwright test e2e/ai-split-composition.spec.ts --retries=0
+
+      - name: Retain workspace composition failure evidence
+        if: failure() && matrix.id == 'macos-arm64'
+        uses: actions/upload-artifact@v7
+        with:
+          name: workspace-composition-failure-${{ github.ref_name }}
+          path: e2e/.output
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Require macOS signing credentials
         if: startsWith(matrix.id, 'macos-')

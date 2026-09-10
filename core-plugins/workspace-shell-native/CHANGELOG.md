@@ -5,7 +5,7 @@
 - Keep pane drag previews above native browser content, including when moving a pane across the browser.
 - Keep split headers and terminal surfaces opaque beside a live browser so old titles, chat positions, and other window content cannot show through them.
 
-Ships with Termco 0.9.12 through the application update.
+Ships with Termco 0.9.13 through the application update.
 
 ## 1.0.1
 
