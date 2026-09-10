@@ -136,7 +136,7 @@ export function SurfaceHost(props: SurfaceHostProps) {
     activeTab.kind.startsWith("plugin:") &&
     !contributions.some(({ value }) => value.kinds.includes(activeTab.kind));
   return (
-    <div className="relative h-full min-h-0">
+    <div className="relative h-full min-h-0 bg-background">
       {activeKindUnclaimed && activeTab ? <PluginTabPlaceholder kind={activeTab.kind} /> : null}
       {contributions.map((entry) => (
         <SurfaceEntry

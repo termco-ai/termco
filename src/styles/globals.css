@@ -30,10 +30,11 @@
 
 /* Let the live browser sibling show through the exact preview rectangle. The
    Termco renderer remains a transparent native sibling that can be raised when
-   a DOM overlay needs to paint above the browser. */
-html[data-live-browser-layer="true"],
-html[data-live-browser-layer="true"] body,
-html[data-live-browser-layer="true"] #root,
+   a DOM overlay needs to paint above the browser. Inactive, empty, or failed
+   browser tabs must not leave a transparency hole in the workspace. */
+html[data-live-browser-layer="true"]:has([data-live-browser-hole="true"]),
+html[data-live-browser-layer="true"]:has([data-live-browser-hole="true"]) body,
+html[data-live-browser-layer="true"]:has([data-live-browser-hole="true"]) #root,
 html[data-live-browser-layer="true"] #root *:has([data-live-browser-hole="true"]) {
     background: transparent !important;
 }

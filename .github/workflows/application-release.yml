@@ -202,6 +202,10 @@ jobs:
 
       - run: pnpm build
 
+      - name: Test production workspace composition
+        if: matrix.id == 'macos-arm64'
+        run: pnpm exec playwright test e2e/ai-split-composition.spec.ts --retries=0
+
       - name: Require macOS signing credentials
         if: startsWith(matrix.id, 'macos-')
         shell: bash

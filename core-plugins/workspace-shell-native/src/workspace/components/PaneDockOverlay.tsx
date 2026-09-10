@@ -15,7 +15,7 @@ export function PaneDockOverlay({ target }: { target: NonNullable<SnapTarget> })
   const vertical = target === "top" || target === "bottom";
   const before = target === "left" || target === "top";
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 z-50">
+    <div aria-hidden data-termco-overlay="true" className="pointer-events-none absolute inset-0 z-50">
       {target !== "center" && (
         <div data-testid="pane-dock-drop-indicator" data-dock-position={target}
           className={cn("absolute rounded-md border-2 border-primary/60 bg-primary/10", regions[target])} />

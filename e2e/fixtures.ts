@@ -191,12 +191,14 @@ export const test = base.extend<{
   workspace: Workspace;
   app: ElectronApplication;
   page: Page;
+  layeredRenderer: boolean;
 }>({
+  layeredRenderer: [false, { option: true }],
   workspace: async ({}, use) => {
     await use(seedWorkspace());
   },
 
-  app: async ({ workspace }, use) => {
+  app: async ({ workspace, layeredRenderer }, use) => {
     const launch = () =>
       electron.launch({
         args: [MAIN, workspace.dir],
@@ -204,6 +206,7 @@ export const test = base.extend<{
           ...process.env,
           TERMCO_USER_DATA: workspace.userData,
           TERMCO_E2E: "1",
+          TERMCO_E2E_LAYERED_RENDERER: layeredRenderer ? "1" : "0",
           // Ephemeral MCP-server port so parallel E2E workers don't collide on
           // the fixed default (the test reads the actual URL back from the app).
           TERMCO_MCP_PORT: "0",
@@ -229,8 +232,13 @@ export const test = base.extend<{
     await closeElectronApp(app);
   },
 
-  page: async ({ app }, use) => {
-    const page = await app.firstWindow();
+  page: async ({ app, layeredRenderer }, use) => {
+    if (layeredRenderer) {
+      await expect.poll(() => app.windows().some(page => page.url().includes("liveBrowserLayer=1")), { timeout: 20_000 }).toBe(true);
+    }
+    const page = layeredRenderer
+      ? app.windows().find(page => page.url().includes("liveBrowserLayer=1"))!
+      : await app.firstWindow();
     const startup = collectErrors(page);
     await page.waitForLoadState("domcontentloaded");
     // Wait for the React shell + explorer to actually mount before any test runs.

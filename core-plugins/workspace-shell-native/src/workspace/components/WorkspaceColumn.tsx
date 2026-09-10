@@ -90,7 +90,7 @@ function SplitPane({
         showHeader && focused ? "ring-1 ring-primary/40" : "ring-0",
       )}
     >
-      {showHeader && <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-border/40 px-2">
+      {showHeader && <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-border/40 bg-background px-2">
         <div {...dragHandle} data-pane-drag-handle title="Drag to move pane"
           className="flex h-full min-w-0 flex-1 touch-none cursor-grab select-none items-center gap-1.5 active:cursor-grabbing">
           {tab && Icon ? <Icon tab={tabPresentationModel(tab)} /> : null}

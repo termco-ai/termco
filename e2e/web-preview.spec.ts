@@ -86,6 +86,9 @@ test("shows the view after navigation and hides it under an overlay", async ({
   app,
   page,
 }) => {
+  // The onboarding offer is itself an overlay. Dismiss it before measuring
+  // whether the browser is unobstructed and then covered by the palette.
+  await page.getByTestId("onboarding-offer").getByRole("button", { name: "Not now" }).click();
   await page.keyboard.press(`${MOD}+Shift+o`);
   await expect(
     page.getByRole("tab", { name: /preview/i }).first(),

@@ -4,7 +4,7 @@
   "name": "Workspace Shell",
   "description": "Owns the exact established resizable workspace layout, split panes, sidebar composition, shortcuts, and close-dialog presentation.",
   "category": "Interface",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "entrypoints": {
     "renderer": "src/renderer.tsx"
   },

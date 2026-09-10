@@ -12,9 +12,10 @@ const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 // Native browser pages and the Termco UI must be sibling WebContentsViews so
 // either one can be raised above the other. Keep the old BrowserWindow-hosted
 // renderer only for the existing Playwright harness, which attaches directly
-// to BrowserWindow.webContents.
+// to BrowserWindow.webContents. Composition tests explicitly select the
+// production renderer while retaining isolated E2E state and credentials.
 const USE_LAYERED_RENDERER =
-  process.env.TERMCO_E2E !== "1" &&
+  (process.env.TERMCO_E2E !== "1" || process.env.TERMCO_E2E_LAYERED_RENDERER === "1") &&
   process.env.TERMCO_DISABLE_LAYERED_RENDERER !== "1";
 
 // Resolve paths relative to the built main bundle (dist-electron/main/index.cjs).
